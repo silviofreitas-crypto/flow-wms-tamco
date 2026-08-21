@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FLOW WMS | Desktop</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2830/2830305.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;900&display=swap" rel="stylesheet">
+
+  <style>
+    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden;}
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* =======================================================
+       LAYOUT DE IMPRESSÃO DA ETIQUETA (14cm x 9cm)
+       ======================================================= */
+    .preview-container { 
+      display: flex; justify-content: center; align-items: center;
+      background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #f8fafc 10px, #f8fafc 20px);
+      padding: 20px; border-radius: 1rem; min-height: 450px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .etiqueta-box {
+      width: 140mm; height: 90mm; background: #ffffff;
+      border: 2px solid #000000; box-sizing: border-box; padding: 0;
+      color: #000000; display: flex; flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+
+    .etiqueta-box .table-etiqueta td { font-size: 13px; padding: 2px 6px; line-height: 1.15; }
+    .etiqueta-box .lbl-header, .etiqueta-box .lbl-header-half { font-size: 12px; }
+    .etiqueta-box .val-content { font-size: 20px; }
+    .etiqueta-box .val-desc { font-size: 16px; }
+    .etiqueta-box .footer-meta { font-size: 10px; padding: 4px 6px; justify-content: flex-end; }
+    .etiqueta-box .qr-text { font-size: 11px; margin-top: 2px; }
+    .etiqueta-box .qrcode-container img, .etiqueta-box .qrcode-container canvas { width: 45px; height: 45px; }
+
+    .table-etiqueta { width: 100%; flex-grow: 1; height: auto; border-collapse: collapse; table-layout: fixed; }
+    .table-etiqueta td { border: 1px solid #000000; vertical-align: middle; overflow: hidden; }
+    .lbl-header { background-color: #8bb7e8 !important; font-weight: bold; text-transform: uppercase; width: 22%; color: #000000; }
+    .lbl-header-half { width: 14%; background-color: #8bb7e8 !important; font-weight: bold; color: #000000; }
+    .val-content { font-weight: 900; text-transform: uppercase; background-color: #ffffff !important; color: #000000; }
+    .val-desc { font-weight: 900; background-color: #ffffff !important; color: #000000;}
+    .footer-meta { display: flex; flex-shrink: 0; align-items: flex-end; justify-content: flex-end; font-weight: 600; color: #000000; padding-top: 2px; }
+
+    .qrcode-container { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 2px 0; }
+    .qr-text { font-weight: 900; color: #000; margin-top: 2px; }
+
+    /* Tabelas SaaS Modernas */
+    .saas-table th { 
+      background-color: #f8fafc; color: #64748b; font-size: 0.75rem; 
+      text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; 
+      border-bottom: 2px solid #f1f5f9; padding: 1.25rem 1.5rem; text-align: left; 
+    }
+    .saas-table td { 
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; 
+      color: #334155; font-size: 0.875rem; font-weight: 500; vertical-align: middle; 
+    }
+    .saas-table tbody tr { transition: all 0.2s ease; background-color: #ffffff; }
+    .saas-table tbody tr:hover { background-color: #f8fafc; }
+
+    /* Inputs Modernos */
+    .input-moderno {
+      width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; color: #334155; font-weight: 600; border-radius: 0.75rem; padding: 0.75rem 1.25rem;
+      transition: all 0.2s; outline: none;
+    }
+    .input-moderno:focus { background-color: #ffffff; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+    .label-moderno { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* SweetAlert Custom UI */
+    .swal-custom-popup { border-radius: 1.5rem !important; padding: 2rem !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; border: 1px solid #f1f5f9 !important; }
+    .swal-custom-title { font-family: 'Inter', sans-serif !important; font-weight: 900 !important; color: #1e293b !important; font-size: 1.5rem !important; }
+    .swal-custom-html { font-family: 'Inter', sans-serif !important; color: #64748b !important; font-weight: 500 !important; font-size: 1rem !important; }
+    .swal-btn-confirm { background-color: #2563eb !important; color: white !important; font-weight: 700 !important; border-radius: 0.75rem !important; padding: 0.75rem 1.5rem !important; margin: 0 0.5rem !important; transition: all 0.2s !important; }
+    .swal-btn-confirm:hover { background-color: #1d4ed8 !important; }
+    .swal-btn-cancel { background-color: #f1f5f9 !important; color: #64748b !important; font-weight: 700 !important; border-radius: 0.75rem !important; padding: 0.75rem 1.5rem !important; margin: 0 0.5rem !important; transition: all 0.2s !important; }
+    .swal-btn-cancel:hover { background-color: #e2e8f0 !important; color: #475569 !important; }
+    .swal-btn-danger { background-color: #ef4444 !important; color: white !important; font-weight: 700 !important; border-radius: 0.75rem !important; padding: 0.75rem 1.5rem !important; margin: 0 0.5rem !important; transition: all 0.2s !important; }
+    .swal-btn-danger:hover { background-color: #dc2626 !important; }
+
+    @media print {
+      @page { size: 140mm 90mm; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100% !important; background: white !important; }
+      body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body * { visibility: hidden; margin: 0; }
+      .preview-container, .preview-container * { visibility: visible; }
+      .preview-container { 
+        position: fixed; left: 0; top: 0; width: 140mm !important; height: 90mm !important; 
+        margin: 0 !important; padding: 0 !important; background: white !important; 
+        display: flex; align-items: center; justify-content: center; border-radius: 0; box-sizing: border-box; border: none;
+      }
+      .esconder-impressao, .sidebar { display: none !important; }
+    }
+  </style>
+</head>
+
+<body class="text-slate-800 antialiased w-full">
+
+  <!-- ================= SIDEBAR (MENU LATERAL) ================= -->
+  <aside class="sidebar w-64 bg-[#0f172a] text-slate-300 h-full flex flex-col shrink-0 border-r border-slate-800 transition-all z-20">
+    <div class="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
+      <div class="bg-blue-600 p-2 rounded-lg mr-3 shadow-lg shadow-blue-600/20">
+        <i class="fa-solid fa-cube text-white"></i>
+      </div>
+      <h1 class="text-xl font-black tracking-widest text-white">FLOW<span class="text-blue-500 font-light">WMS</span></h1>
+    </div>
+
+    <div class="px-6 py-6">
+      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Módulos do Sistema</p>
+      <nav class="space-y-2">
+        <button onclick="navegarPara('tela-etiqueta')" id="btnNavEtiqueta" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm text-left bg-blue-600 text-white shadow-md shadow-blue-600/10">
+          <i class="fa-solid fa-qrcode w-5 text-center"></i> Impressão Zebra
+        </button>
+        <button onclick="verificarAcessoCadastro()" id="btnNavCadastro" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm text-left hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-database w-5 text-center"></i> Base de Produtos
+          <i class="fa-solid fa-lock text-[10px] ml-auto text-slate-500" id="iconLock"></i>
+        </button>
+      </nav>
+    </div>
+    
+    <div class="mt-auto p-6 border-t border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+          <i class="fa-solid fa-building text-slate-400 text-sm"></i>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-white">Operação Tamco</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= ÁREA PRINCIPAL ================= -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#f4f7f9] relative">
+    
+    <!-- TOPBAR -->
+    <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 esconder-impressao z-10">
+      <h2 class="text-xl font-black text-slate-800 tracking-tight" id="titulo-pagina">Gerador de Etiquetas</h2>
+      <div class="flex items-center gap-3">
+        <span class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-full shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Banco Conectado
+        </span>
+      </div>
+    </header>
+
+    <!-- CONTEÚDO SCROLLÁVEL -->
+    <main class="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
+      
+      <!-- ========================================== -->
+      <!-- TELA 1: ETIQUETAS -->
+      <!-- ========================================== -->
+      <div id="tela-etiqueta" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 fade-in">
+        
+        <!-- Formulário Lateral -->
+        <div class="lg:col-span-4 flex flex-col gap-6 esconder-impressao">
+          
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="text-sm font-black text-slate-800 mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <i class="fa-solid fa-magnifying-glass text-blue-500"></i> Localizar Material
+            </h3>
+            
+            <div class="relative">
+              <label class="label-moderno">Pesquisa Rápida</label>
+              <div class="relative">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="campoBusca" placeholder="Ex: T1MV0001..." oninput="executarBusca(this.value)" class="input-moderno pl-11">
+              </div>
+              <div id="listaSugestoes" class="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl max-h-56 overflow-y-auto shadow-2xl z-50 hidden custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h3 class="text-sm font-black text-slate-800 mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-blue-500"></i> Variáveis do Lote
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-5 mb-5">
+              <div>
+                <label class="label-moderno">Lote</label>
+                <input type="text" id="inpLote" placeholder="NR00000001" oninput="atualizarEtiqueta()" class="input-moderno uppercase">
+              </div>
+              <div>
+                <label class="label-moderno">Quantidade</label>
+                <input type="number" id="inpQtd" value="1" oninput="atualizarEtiqueta()" class="input-moderno text-center font-black text-blue-600">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-5">
+              <div>
+                <label class="label-moderno">Fabricação</label>
+                <input type="date" id="inpEntrada" onchange="atualizarEtiqueta()" class="input-moderno text-sm">
+              </div>
+              <div>
+                <label class="label-moderno">Validade</label>
+                <input type="date" id="inpValidade" onchange="atualizarEtiqueta()" class="input-moderno text-sm">
+              </div>
+            </div>
+          </div>
+
+          <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-slate-900/10 flex justify-center items-center gap-3">
+            <i class="fa-solid fa-print text-lg"></i> Disparar Impressão Zebra
+          </button>
+
+        </div>
+
+        <!-- Área de Pré-visualização da Etiqueta -->
+        <div class="lg:col-span-8 preview-container shadow-inner border border-slate-200">
+          <div id="box-etiqueta" class="etiqueta-box">
+            <table class="table-etiqueta">
+              <tr>
+                <td class="lbl-header">DESCRIÇÃO</td>
+                <td colspan="3" class="val-desc" id="lblDescricao">-</td>
+              </tr>
+              <tr>
+                <td class="lbl-header">LOTE</td>
+                <td class="val-content" style="text-align: center; padding: 2px;">
+                  <span id="lblLoteTexto">-</span>
+                  <div class="qrcode-container" id="boxQrLote" style="display: none;">
+                    <div id="qrLote"></div>
+                    <span id="qrLoteText" class="qr-text"></span>
+                  </div>
+                </td>
+                <td class="lbl-header-half">CÓDIGO</td>
+                <td class="val-content" style="text-align: center; padding: 2px;">
+                  <span id="lblCodTexto">-</span>
+                  <div class="qrcode-container" id="boxQrCod" style="display: none;">
+                    <div id="qrCod"></div>
+                    <span id="qrCodText" class="qr-text"></span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="lbl-header">VALIDADE</td>
+                <td class="val-content" id="lblValidade" style="text-align: center;">-</td>
+                <td class="lbl-header-half">TIPO</td>
+                <td class="val-content" id="lblTipo" style="text-align: center;">-</td>
+              </tr>
+              <tr>
+                <td class="lbl-header">ENTRADA</td>
+                <td class="val-content" id="lblEntrada" style="text-align: center;">-</td>
+                <td class="lbl-header-half">QTD</td>
+                <td class="val-content" id="lblQtd" style="text-align: center;">-</td>
+              </tr>
+            </table>
+            <div class="footer-meta">
+              <div id="lblDataEmissao" style="width: 100%; text-align: right;">Data emissão: --/--/---- --:--:--</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TELA 2: CADASTRO -->
+      <!-- ========================================== -->
+      <div id="tela-cadastro" class="max-w-7xl mx-auto hidden flex-col gap-6 fade-in">
+        
+        <!-- Header da Tabela -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+          <div class="relative w-full sm:w-[400px]">
+            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="campoBuscaLista" placeholder="Pesquisar catálogo..." oninput="filtrarTabela()" class="input-moderno pl-11 border-slate-200 bg-slate-50 focus:bg-white">
+          </div>
+          <button onclick="abrirModalNovo()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-6 py-3 rounded-xl transition text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+            <i class="fa-solid fa-plus"></i> Novo Material
+          </button>
+        </div>
+
+        <!-- Tabela Estilo SaaS -->
+        <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex-1">
+          <div class="overflow-x-auto h-[65vh] custom-scrollbar relative">
+            <table class="w-full saas-table">
+              <thead class="sticky top-0 z-10">
+                <tr>
+                  <th class="w-1/4">Código do Material</th>
+                  <th class="w-1/2">Descrição Técnica</th>
+                  <th class="w-1/6 text-center">Unidade</th>
+                  <th class="w-1/6 text-right pr-8">Gerenciar</th>
+                </tr>
+              </thead>
+              <tbody id="corpoTabela">
+                <!-- Dados via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- MODAL DE CADASTRO/EDIÇÃO -->
+  <div id="modal-cadastro" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in px-4">
+    <div class="bg-white w-full max-w-[450px] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      
+      <div class="flex justify-between items-center px-8 py-6 border-b border-slate-100 bg-white">
+        <h3 id="modal-titulo" class="text-xl font-black text-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+            <i class="fa-solid fa-cube text-lg"></i>
+          </div>
+          Cadastrar Material
+        </h3>
+        <button onclick="fecharModalCadastro()" class="text-slate-400 hover:text-rose-500 transition-colors w-10 h-10 flex items-center justify-center rounded-full hover:bg-rose-50">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-8 space-y-5 bg-slate-50/50">
+        <input type="hidden" id="cadAcao" value="novo">
+        
+        <div>
+          <label class="label-moderno">Cód Material <span class="text-rose-500">*</span></label>
+          <input type="text" id="cadCodigo" placeholder="Ex: T1MV0001" class="input-moderno uppercase bg-white">
+        </div>
+        <div>
+          <label class="label-moderno">Descrição Completa <span class="text-rose-500">*</span></label>
+          <input type="text" id="cadDescricao" placeholder="Ex: ÓLEO LUBRIFICANTE..." class="input-moderno uppercase bg-white">
+        </div>
+        <div>
+          <label class="label-moderno">Unidade de Medida <span class="text-rose-500">*</span></label>
+          <select id="cadMedida" class="input-moderno cursor-pointer bg-white">
+            <option value="KG">KG (Quilograma)</option>
+            <option value="UN">UN (Unidade)</option>
+            <option value="L">L (Litros)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="p-6 border-t border-slate-100 bg-white">
+        <button onclick="confirmarSalvamento()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex justify-center items-center gap-2 text-base">
+          <i class="fa-solid fa-check"></i> Salvar Cadastro
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+ <script>
+    // ==========================================
+    // INICIALIZAÇÃO DO SUPABASE
+    // ==========================================
+    const supabaseUrl = 'https://nzoxwptrymtkfhdyzrgl.supabase.co';
+    const supabaseKey = 'sb_publishable_zhURV-j6cbu0bsQ_yeWbrw_cBFeX1UK';
+    const createSupabaseClient = window.supabase ? window.supabase.createClient : supabase.createClient;
+    const client = createSupabaseClient(supabaseUrl, supabaseKey);
+
+    var listaGlobalProdutos = [];
+    let cadastroDesbloqueado = false; // Trava de segurança
+
+    // Estilo customizado para injetar no SweetAlert para não usar as bordas feias do navegador
+    const swalEstiloInput = `
+      <style>
+        .swal2-input {
+          background-color: #f8fafc !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 0.75rem !important;
+          box-shadow: none !important;
+          color: #334155 !important;
+          font-weight: 600 !important;
+          height: 3rem !important;
+          margin-top: 1rem !important;
+        }
+        .swal2-input:focus {
+          background-color: #ffffff !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+      </style>
+    `;
+
+    // ==========================================
+    // NAVEGAÇÃO E SEGURANÇA (SPA)
+    // ==========================================
+    function verificarAcessoCadastro() {
+      if (cadastroDesbloqueado) {
+        navegarPara('tela-cadastro');
+        return;
+      }
+
+      Swal.fire({
+        title: 'Acesso Restrito',
+        html: swalEstiloInput + '<span style="font-size: 0.95rem; color: #64748b; font-weight: 500;">Digite a senha de liberação para acessar a base de dados.</span>',
+        input: 'password',
+        inputPlaceholder: 'Senha de validação...',
+        showCancelButton: true,
+        confirmButtonText: 'Validar Acesso',
+        cancelButtonText: 'Cancelar',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'swal-custom-popup',
+          title: 'swal-custom-title',
+          htmlContainer: 'swal-custom-html',
+          confirmButton: 'swal-btn-confirm',
+          cancelButton: 'swal-btn-cancel'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (result.value === '21082026@') {
+            cadastroDesbloqueado = true;
+            document.getElementById('iconLock').classList.replace('fa-lock', 'fa-lock-open');
+            document.getElementById('iconLock').classList.replace('text-slate-500', 'text-emerald-400');
+            navegarPara('tela-cadastro');
+          } else {
+            Swal.fire({
+              icon: 'error', title: 'Acesso Negado', text: 'Senha incorreta.',
+              buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }
+            });
+          }
+        }
+      });
+    }
+
+    function navegarPara(telaId) {
+      document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm text-left hover:bg-slate-800 hover:text-white text-slate-400";
+      document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm text-left hover:bg-slate-800 hover:text-white text-slate-400";
+
+      document.getElementById('tela-etiqueta').classList.add('hidden');
+      document.getElementById('tela-cadastro').classList.add('hidden');
+      document.getElementById('tela-cadastro').classList.remove('flex');
+
+      if (telaId === 'tela-etiqueta') {
+        document.getElementById('titulo-pagina').innerText = "Gerador de Etiquetas";
+        document.getElementById('tela-etiqueta').classList.remove('hidden');
+        document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-left bg-blue-600 text-white shadow-md shadow-blue-600/20";
+      } else {
+        document.getElementById('titulo-pagina').innerText = "Catálogo de Materiais";
+        document.getElementById('tela-cadastro').classList.remove('hidden');
+        document.getElementById('tela-cadastro').classList.add('flex');
+        document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-left bg-blue-600 text-white shadow-md shadow-blue-600/20";
+        carregarTabelaSupabase(); 
+      }
+    }
+
+    // ==========================================
+    // LÓGICA DA TELA 2: CADASTRO
+    // ==========================================
+    async function carregarTabelaSupabase() {
+      const corpo = document.getElementById('corpoTabela');
+      corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-slate-400 font-bold"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-blue-500 block"></i> Sincronizando dados...</td></tr>`;
+      
+      const { data, error } = await client.from('produtos_tamco').select('id, cod_mat, descricao, medida').order('cod_mat', { ascending: true });
+
+      if (error) {
+        corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-rose-500 font-bold">Erro de comunicação com o banco de dados.</td></tr>`;
+        return;
+      }
+
+      listaGlobalProdutos = data;
+      renderizarTabela(listaGlobalProdutos);
+    }
+
+    function renderizarTabela(dados) {
+      const corpo = document.getElementById('corpoTabela');
+      corpo.innerHTML = '';
+
+      if (dados.length === 0) {
+        corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-slate-400 font-bold">Base de dados vazia.</td></tr>`;
+        return;
+      }
+
+      dados.forEach(prod => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="font-bold text-slate-800 uppercase tracking-wide">${prod.cod_mat}</td>
+          <td class="text-slate-600 font-semibold uppercase truncate max-w-[200px] sm:max-w-md">${prod.descricao}</td>
+          <td class="text-center">
+            <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold border border-indigo-100">${prod.medida}</span>
+          </td>
+          <td class="text-right pr-6">
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="abrirModalEditar('${prod.id}')" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Editar">
+                <i class="fa-solid fa-pen text-sm"></i>
+              </button>
+              <button onclick="confirmarExclusao('${prod.id}', '${prod.cod_mat}')" class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Excluir">
+                <i class="fa-solid fa-trash text-sm"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        corpo.appendChild(tr);
+      });
+    }
+
+    function filtrarTabela() {
+      const termo = document.getElementById('campoBuscaLista').value.toLowerCase();
+      const filtrados = listaGlobalProdutos.filter(p => p.cod_mat.toLowerCase().includes(termo) || p.descricao.toLowerCase().includes(termo));
+      renderizarTabela(filtrados);
+    }
+
+    function abrirModalNovo() {
+      document.getElementById('cadAcao').value = 'novo';
+      document.getElementById('modal-titulo').innerHTML = `<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-cube text-lg"></i></div> Novo Material`;
+      document.getElementById('cadCodigo').value = "";
+      document.getElementById('cadCodigo').disabled = false;
+      document.getElementById('cadDescricao').value = "";
+      document.getElementById('cadMedida').value = "KG";
+      document.getElementById('modal-cadastro').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cadCodigo').focus(), 100);
+    }
+
+    function abrirModalEditar(id) {
+      const prod = listaGlobalProdutos.find(p => p.id === id);
+      if (!prod) return;
+      document.getElementById('cadAcao').value = id;
+      document.getElementById('modal-titulo').innerHTML = `<div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-pen text-lg"></i></div> Editar Material`;
+      document.getElementById('cadCodigo').value = prod.cod_mat;
+      document.getElementById('cadCodigo').disabled = true; 
+      document.getElementById('cadDescricao').value = prod.descricao;
+      document.getElementById('cadMedida').value = prod.medida;
+      document.getElementById('modal-cadastro').classList.remove('hidden');
+      setTimeout(() => document.getElementById('cadDescricao').focus(), 100);
+    }
+
+    function fecharModalCadastro() {
+      document.getElementById('modal-cadastro').classList.add('hidden');
+    }
+
+    // ==========================================
+    // CONFIRMAÇÕES ELEGANTES (MODALS)
+    // ==========================================
+    function confirmarSalvamento() {
+      const cod = document.getElementById('cadCodigo').value.trim();
+      const desc = document.getElementById('cadDescricao').value.trim();
+      
+      if (!cod || !desc) {
+        Swal.fire({
+          icon: 'warning', title: 'Atenção', text: 'Preencha os campos obrigatórios.',
+          buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }
+        });
+        return;
+      }
+
+      Swal.fire({
+        title: 'Confirmar Ação',
+        text: "Deseja salvar as informações deste material no sistema?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, salvar',
+        cancelButtonText: 'Cancelar',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-html',
+          confirmButton: 'swal-btn-confirm', cancelButton: 'swal-btn-cancel'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          executarSalvamentoBanco();
+        }
+      });
+    }
+
+    function confirmarExclusao(id, codMat) {
+      Swal.fire({
+        title: 'Excluir Material',
+        html: `Remover definitivamente o item <b>${codMat}</b> do catálogo?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Excluir',
+        cancelButtonText: 'Cancelar',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-html',
+          confirmButton: 'swal-btn-danger', cancelButton: 'swal-btn-cancel'
+        }
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          Swal.fire({ title: 'Excluindo...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }});
+          const { error } = await client.from('produtos_tamco').delete().eq('id', id);
+          if (error) {
+            Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha na exclusão.', buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }});
+          } else {
+            Swal.fire({ icon: 'success', title: 'Excluído!', timer: 1500, showConfirmButton: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }});
+            carregarTabelaSupabase();
+          }
+        }
+      });
+    }
+
+    async function executarSalvamentoBanco() {
+      const acaoId = document.getElementById('cadAcao').value;
+      const cod = document.getElementById('cadCodigo').value.trim().toUpperCase();
+      const desc = document.getElementById('cadDescricao').value.trim().toUpperCase();
+      const med = document.getElementById('cadMedida').value;
+
+      Swal.fire({ title: 'Processando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }});
+
+      if (acaoId === 'novo') {
+        const { error } = await client.from('produtos_tamco').insert([{ cod_mat: cod, descricao: desc, medida: med }]);
+        if (error) return Swal.fire({ icon: 'error', title: 'Falha', text: 'O código pode já estar cadastrado.', buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }});
+      } else {
+        const { error } = await client.from('produtos_tamco').update({ descricao: desc, medida: med }).eq('id', acaoId);
+        if (error) return Swal.fire({ icon: 'error', title: 'Falha', text: 'Erro ao atualizar dados.', buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }});
+      }
+
+      Swal.fire({ icon: 'success', title: 'Cadastro salvo!', timer: 1500, showConfirmButton: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }});
+      fecharModalCadastro();
+      carregarTabelaSupabase(); 
+    }
+
+
+    // ==========================================
+    // LÓGICA DA TELA 1: ETIQUETAS
+    // ==========================================
+    function renderizarQR(elementId, textElementId, boxId, textPlaceholderId, valor) {
+      const container = document.getElementById(elementId);
+      container.innerHTML = ""; 
+      const valorStr = String(valor || "").trim();
+      if (valorStr !== "" && valorStr !== "-") {
+        document.getElementById(textPlaceholderId).style.display = "none";
+        document.getElementById(boxId).style.display = "flex";
+        new QRCode(container, { text: valorStr, width: 90, height: 90, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.L });
+        document.getElementById(textElementId).innerText = valorStr;
+      } else {
+        document.getElementById(textPlaceholderId).style.display = "block";
+        document.getElementById(boxId).style.display = "none";
+        document.getElementById(textPlaceholderId).innerText = "-";
+      }
+    }
+
+    async function executarBusca(termo) {
+      const termoLimpo = termo.trim();
+      const caixa = document.getElementById('listaSugestoes');
+
+      if (termoLimpo.length < 2) {
+        caixa.style.display = 'none';
+        return;
+      }
+
+      const { data, error } = await client.from('produtos_tamco').select('cod_mat, descricao, medida').or(`cod_mat.ilike.%${termoLimpo}%,descricao.ilike.%${termoLimpo}%`).limit(10);
+      if (error) return;
+
+      montarListaBusca(data);
+    }
+
+    function montarListaBusca(resultados) {
+      var caixa = document.getElementById('listaSugestoes');
+      caixa.innerHTML = '';
+      if (!resultados || resultados.length === 0) {
+        caixa.innerHTML = '<div class="p-4 text-slate-400 font-bold text-sm text-center">Nenhum material encontrado</div>';
+        caixa.style.display = 'block';
+        return;
+      }
+      resultados.forEach(function(prod) {
+        var div = document.createElement('div');
+        div.className = 'px-5 py-3.5 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors text-sm text-slate-600 flex items-center gap-3';
+        div.innerHTML = `<span class="bg-slate-100 text-slate-700 font-mono font-bold px-2 py-1 rounded text-xs">${prod.cod_mat}</span> <span class="font-semibold truncate">${prod.descricao}</span>`;
+        div.onclick = function() { selecionarProdutoEtiqueta(prod); };
+        caixa.appendChild(div);
+      });
+      caixa.style.display = 'block';
+    }
+
+    function selecionarProdutoEtiqueta(prod) {
+      document.getElementById('campoBusca').value = prod.descricao;
+      document.getElementById('listaSugestoes').style.display = 'none';
+      document.getElementById('lblDescricao').innerText = prod.descricao || "-";
+      document.getElementById('lblTipo').innerText = prod.medida || "-";
+      renderizarQR('qrCod', 'qrCodText', 'boxQrCod', 'lblCodTexto', prod.cod_mat);
+      atualizarEtiqueta();
+    }
+
+    function formatarDataBR(dataString) {
+      if (!dataString) return "-";
+      var partes = dataString.split("-");
+      if (partes.length !== 3) return dataString;
+      return partes[2] + "/" + partes[1] + "/" + partes[0];
+    }
+
+    function atualizarEtiqueta() {
+      var lote = document.getElementById('inpLote').value || "-";
+      renderizarQR('qrLote', 'qrLoteText', 'boxQrLote', 'lblLoteTexto', lote);
+      document.getElementById('lblQtd').innerText = document.getElementById('inpQtd').value || "1";
+      var valDate = document.getElementById('inpValidade').value;
+      var entDate = document.getElementById('inpEntrada').value;
+      document.getElementById('lblValidade').innerText = formatarDataBR(valDate);
+      document.getElementById('lblEntrada').innerText = formatarDataBR(entDate);
+      
+      var agora = new Date();
+      var dataFormatada = ("0" + agora.getDate()).slice(-2) + "/" + ("0" + (agora.getMonth() + 1)).slice(-2) + "/" + agora.getFullYear() + " " + ("0" + agora.getHours()).slice(-2) + ":" + ("0" + agora.getMinutes()).slice(-2) + ":" + ("0" + agora.getSeconds()).slice(-2);
+      document.getElementById('lblDataEmissao').innerText = "Data emissão: " + dataFormatada;
+    }
+
+    window.onload = function() {
+      var hoje = new Date().toISOString().split('T')[0];
+      document.getElementById('inpEntrada').value = hoje;
+      atualizarEtiqueta();
+    }
+
+    document.addEventListener('click', function(event) {
+      var caixa = document.getElementById('listaSugestoes');
+      var inputBusca = document.getElementById('campoBusca');
+      if (event.target !== inputBusca && !caixa.contains(event.target)) {
+        caixa.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
