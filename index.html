@@ -66,11 +66,11 @@
     .qr-text { font-weight: 900; color: #000; margin-top: 2px; font-size: 12px; }
 
     /* =======================================================
-       BLINDAGEM DE IMPRESSÃO ZEBRA (Forçando o Centro Matemático)
+       BLINDAGEM DE IMPRESSÃO ZEBRA (Compensação Física)
        ======================================================= */
     @media print {
       @page { 
-        size: 158mm 108mm; /* O tamanho exato do seu driver da Zebra */
+        size: 158mm 108mm; 
         margin: 0; 
       }
       html, body { 
@@ -91,18 +91,19 @@
         width: 158mm !important; height: 108mm !important; 
         margin: 0 !important; padding: 0 !important; 
         background: white !important; 
-        display: block !important; /* Desativa flexbox para impressão */
+        display: block !important;
         border-radius: 0; box-sizing: border-box; border: none;
       }
 
-      /* O pulo do gato: posicionamento absoluto cravado no centro */
       .etiqueta-box {
         width: 140mm !important; 
         height: 90mm !important;
         position: absolute !important;
-        top: 50% !important;
+        
+        /* A MÁGICA AQUI: Puxamos a etiqueta para o topo (2mm) */
+        top: 2mm !important; 
         left: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        transform: translateX(-50%) !important; /* Mantém centralizado apenas nas laterais */
         margin: 0 !important;
       }
       
