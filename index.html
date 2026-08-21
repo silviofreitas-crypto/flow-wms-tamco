@@ -33,8 +33,7 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* =======================================================
-       LAYOUT DE IMPRESSÃO DA ETIQUETA (DEITADA 140mm x 90mm)
-       Idêntico ao seu layout original, apenas com tamanho fixo
+       LAYOUT VISUAL NA TELA DO PC
        ======================================================= */
     .preview-container { 
       display: flex; justify-content: center; align-items: center;
@@ -65,17 +64,44 @@
     .qrcode-container img, .qrcode-container canvas { width: 55px; height: 55px; }
     .qr-text { font-weight: 900; color: #000; margin-top: 2px; font-size: 12px; }
 
+    /* =======================================================
+       BLINDAGEM DE IMPRESSÃO ZEBRA (158mm x 100mm)
+       Força o navegador a respeitar o tamanho do seu driver
+       ======================================================= */
     @media print {
-      @page { size: 140mm 90mm; margin: 0; }
-      html, body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100% !important; background: white !important; }
+      @page { 
+        size: 158mm 100mm; /* Tamanho exato da config do seu ZDesigner */
+        margin: 0; 
+      }
+      html, body { 
+        width: 158mm !important; 
+        height: 100mm !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        overflow: hidden !important; 
+        background: white !important; 
+      }
       body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       body * { visibility: hidden; margin: 0; }
+      
       .preview-container, .preview-container * { visibility: visible; }
+      
       .preview-container { 
-        position: fixed; left: 0; top: 0; margin: 0 !important; background: white !important; 
-        display: flex; align-items: center; justify-content: center; border-radius: 0; box-sizing: border-box; 
-        width: 140mm !important; height: 90mm !important;
+        position: absolute; left: 0; top: 0; 
+        width: 158mm !important; height: 100mm !important; 
+        margin: 0 !important; padding: 0 !important; 
+        background: white !important; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 0; box-sizing: border-box; border: none;
       }
+
+      /* Garante que a etiqueta fique cravada em 14x9cm no meio do papel de 15.8x10cm */
+      .etiqueta-box {
+        width: 140mm !important; 
+        height: 90mm !important;
+        margin: 0 !important;
+      }
+      
       .esconder-impressao, .sidebar, #sidebarOverlay { display: none !important; }
     }
 
@@ -89,7 +115,7 @@
     .input-moderno:focus { background-color: #ffffff; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
     .label-moderno { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
 
-    /* SweetAlert Custom UI (Modal de Senha e Avisos) */
+    /* SweetAlert Custom UI */
     .swal-custom-popup { border-radius: 1.5rem !important; padding: 1.5rem !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important; border: 1px solid #f1f5f9 !important; }
     .swal-custom-title { font-family: 'Inter', sans-serif !important; font-weight: 900 !important; color: #1e293b !important; font-size: 1.25rem !important; }
     .swal-custom-html { font-family: 'Inter', sans-serif !important; color: #64748b !important; font-weight: 500 !important; font-size: 0.95rem !important; }
@@ -140,6 +166,7 @@
         </div>
         <div>
           <p class="text-sm font-bold text-white">Operação Tamco</p>
+          <p class="text-[11px] text-slate-500">v3.0 Nuvem</p>
         </div>
       </div>
     </div>
@@ -220,7 +247,7 @@
 
         </div>
 
-        <!-- Área de Pré-visualização da Etiqueta (LAYOUT ORIGINAL 140x90) -->
+        <!-- Área de Pré-visualização da Etiqueta (LAYOUT ORIGINAL) -->
         <div class="lg:col-span-8 preview-container shadow-inner border border-slate-200 overflow-x-auto justify-start md:justify-center">
           
           <div id="box-etiqueta" class="etiqueta-box">
