@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FLOW YMS | Gestão de Usuários</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { background-color: #f4f7f9; font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden;}
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+
+    .input-moderno { width: 100%; background-color: #ffffff; border: 1px solid #cbd5e1; color: #334155; font-weight: 600; border-radius: 0.375rem; padding: 0.60rem 1rem; outline: none; transition: border-color 0.2s; font-size: 0.875rem;}
+    .input-moderno:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+    .label-moderno { display: block; font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.40rem; }
+
+    .sidebar-bg { background-color: #2b3243; }
+    .sidebar-hover:hover { background-color: #363f52; color: #ffffff; }
+    .sidebar { transition: width 0.3s ease; }
+    .sidebar.collapsed { width: 5rem; }
+    .sidebar.collapsed .sidebar-text { display: none; }
+    .sidebar.collapsed .sidebar-header-content { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link i { margin: 0; }
+    .sidebar.collapsed .sidebar-logo { display: none; }
+    .sidebar.collapsed .sidebar-icon-logo { margin-right: 0; }
+
+    .saas-table th { background-color: #f8fafc; color: #64748b; font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; border-bottom: 1px solid #e2e8f0; padding: 1rem 1rem; text-align: left; }
+    .saas-table td { padding: 1rem 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 0.85rem; font-weight: 600; vertical-align: middle; }
+    .saas-table tbody tr:hover { background-color: #f8fafc; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased w-full relative">
+  <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300"></div>
+
+  <!-- ================= SIDEBAR ELEGANTE ================= -->
+  <aside id="sidebar" class="sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 sidebar-bg text-slate-300 h-full flex flex-col shrink-0 z-50 shadow-sm">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700/50 shrink-0 sidebar-header-content">
+      <div class="flex items-center w-full">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mr-3 sidebar-icon-logo shadow-lg shadow-blue-500/20"><i class="fa-solid fa-truck-fast text-white text-sm"></i></div>
+        <h1 class="text-lg font-black tracking-widest text-white sidebar-logo sidebar-text">FLOW<span class="text-blue-400 font-light">YMS</span></h1>
+      </div>
+      <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white shrink-0"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+
+    <div class="px-4 py-6 flex-1 overflow-y-auto custom-scrollbar">
+      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2 sidebar-text">Navegação</p>
+      <nav class="space-y-1">
+        <a href="painel.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-house w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Painel Inicial</span>
+        </a>
+        <a href="entrada.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-clipboard-check w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Check-in Veículos</span>
+        </a>
+        <a href="circuito.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-route w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Circuito Pátio</span>
+        </a>
+        
+        <!-- ATIVO -->
+        <a href="usuarios.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm bg-blue-500 text-white shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-users-gear w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Gestão de Usuários</span>
+        </a>
+
+        <div class="pt-4 pb-2 px-2">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest sidebar-text">Utilitários</p>
+        </div>
+        <a href="etiquetas.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-qrcode w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Impressão Zebra</span>
+        </a>
+      </nav>
+    </div>
+    
+    <div class="p-4 border-t border-slate-700/50">
+      <div class="sidebar-link flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0 text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>
+          <div class="sidebar-text">
+            <p class="text-xs font-bold text-white truncate w-24" id="sidebarUser">Usuário</p>
+            <p class="text-[9px] text-blue-400 font-bold uppercase" id="sidebarPerfil">Perfil</p>
+          </div>
+        </div>
+        <button onclick="sairDoSistema()" class="text-slate-400 hover:text-rose-400 transition-colors sidebar-text shrink-0"><i class="fa-solid fa-power-off"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= ÁREA PRINCIPAL ================= -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-10 shadow-sm">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleDesktopSidebar()" class="hidden md:flex w-8 h-8 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"><i class="fa-solid fa-bars-staggered"></i></button>
+        <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+        <h2 class="text-lg font-black text-slate-800 tracking-tight">Gestão de Usuários</h2>
+      </div>
+      <div class="flex items-center gap-3 hidden sm:flex">
+        <div class="text-right"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Módulo Restrito</p><p class="text-xs font-black text-slate-700">Acesso Gestor</p></div>
+        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-200 text-blue-500"><i class="fa-solid fa-shield-halved text-xs"></i></div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative fade-in bg-[#f4f7f9]">
+      <div class="max-w-5xl mx-auto">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
+          <div>
+            <h2 class="text-2xl font-black text-slate-800">Contas do Sistema</h2>
+            <p class="text-sm text-slate-500 mt-1">Gerencie os acessos. Novas contas nascem com a senha "1234".</p>
+          </div>
+          <button onclick="abrirModalUsuario()" class="w-full sm:w-auto px-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-plus"></i> Novo Usuário
+          </button>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full saas-table min-w-[600px]">
+              <thead>
+                <tr>
+                  <th class="w-1/3">Usuário de Login</th>
+                  <th class="w-1/4">Perfil de Acesso</th>
+                  <th class="w-1/6 text-center">Status</th>
+                  <th class="w-1/4 text-right pr-6">Gerenciar</th>
+                </tr>
+              </thead>
+              <tbody id="listaUsuarios">
+                <!-- Tabela Renderizada via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL CRIAR USUÁRIO -->
+  <div id="modal-usuario" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in px-4">
+    <div class="bg-white w-full max-w-[400px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+      <div class="flex justify-between items-center px-6 py-5 border-b border-slate-100 bg-white">
+        <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-blue-600"></i> Criar Acesso
+        </h3>
+        <button onclick="fecharModalUsuario()" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-rose-50"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="p-6 space-y-5 bg-slate-50/50">
+        <div>
+          <label class="label-moderno">Login de Usuário <span class="text-rose-500">*</span></label>
+          <input type="text" id="cadUsuario" placeholder="Ex: silvio.freitas" class="input-moderno lowercase" required>
+        </div>
+        <div>
+          <label class="label-moderno">Perfil no YMS <span class="text-rose-500">*</span></label>
+          <select id="cadPerfil" class="input-moderno cursor-pointer" required>
+            <option value="Operacional">Operacional (Etiquetas)</option>
+            <option value="Transporte">Transporte (Circuito)</option>
+            <option value="Gestor">Gestor (Acesso Total)</option>
+          </select>
+        </div>
+        <div class="bg-blue-50 border border-blue-100 p-3 rounded-lg flex gap-3 items-start">
+          <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+          <p class="text-[10px] text-blue-800 font-medium">A senha inicial gerada será <strong class="font-black">1234</strong>. O usuário será forçado a trocá-la no primeiro acesso.</p>
+        </div>
+      </div>
+
+      <div class="p-5 border-t border-slate-100 bg-white flex justify-end">
+        <button onclick="salvarUsuario()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2.5 rounded-lg transition-all shadow-sm text-sm">Criar Conta</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const perfilLogado = localStorage.getItem('flowYmsPerfil'); const usuarioLogado = localStorage.getItem('flowYmsUser');
+    // BARREIRA DE SEGURANÇA: Só gestor entra aqui.
+    if (!perfilLogado || perfilLogado !== 'Gestor') { window.location.href = 'painel.html'; }
+
+    const supabaseUrl = 'https://nzoxwptrymtkfhdyzrgl.supabase.co';
+    const supabaseKey = 'sb_publishable_zhURV-j6cbu0bsQ_yeWbrw_cBFeX1UK';
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    window.onload = function() {
+      document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
+      document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
+      carregarUsuarios();
+    }
+
+    function toggleDesktopSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    function toggleMobileSidebar() { 
+      const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.remove('opacity-0'), 10); } 
+      else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300); }
+    }
+    function sairDoSistema() { localStorage.clear(); window.location.href = 'index.html'; }
+
+    // ==========================================
+    // LÓGICA DE USUÁRIOS
+    // ==========================================
+    async function carregarUsuarios() {
+      const { data, error } = await client.from('usuarios_yms').select('*').order('criado_em', { ascending: false });
+      if (error) { Swal.fire('Erro', 'Não foi possível carregar os usuários.', 'error'); return; }
+      
+      const corpo = document.getElementById('listaUsuarios');
+      corpo.innerHTML = '';
+
+      data.forEach(u => {
+        const badgeAtivo = u.ativo ? '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">ATIVO</span>' : '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-bold border border-rose-200">INATIVO</span>';
+        
+        let perfilExibicao = u.perfil;
+        if(u.perfil === 'Operacional') perfilExibicao = 'Operacional (Etiqueta)';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500"><i class="fa-solid fa-user text-xs"></i></div>
+              <span class="font-bold text-slate-800 lowercase">${u.usuario}</span>
+            </div>
+          </td>
+          <td><span class="text-slate-500 font-bold text-xs uppercase tracking-wider">${perfilExibicao}</span></td>
+          <td class="text-center">${badgeAtivo}</td>
+          <td class="text-right pr-6">
+            <div class="flex justify-end gap-2">
+              <button onclick="resetarSenha('${u.id}', '${u.usuario}')" class="bg-white border border-slate-200 text-slate-500 hover:text-amber-500 hover:bg-amber-50 px-3 py-1.5 rounded transition text-[10px] font-bold shadow-sm" title="Voltar senha para 1234">Resetar Senha</button>
+              <button onclick="toggleAtivo('${u.id}', ${u.ativo}, '${u.usuario}')" class="bg-white border border-slate-200 text-slate-500 hover:text-${u.ativo ? 'rose' : 'emerald'}-500 hover:bg-${u.ativo ? 'rose' : 'emerald'}-50 px-3 py-1.5 rounded transition text-[10px] font-bold shadow-sm w-20 text-center">${u.ativo ? 'Inativar' : 'Reativar'}</button>
+            </div>
+          </td>
+        `;
+        corpo.appendChild(tr);
+      });
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('cadUsuario').value = '';
+      document.getElementById('cadPerfil').value = 'Operacional';
+      document.getElementById('modal-usuario').classList.remove('hidden');
+    }
+    function fecharModalUsuario() { document.getElementById('modal-usuario').classList.add('hidden'); }
+
+    async function salvarUsuario() {
+      const user = document.getElementById('cadUsuario').value.trim().toLowerCase();
+      const perfil = document.getElementById('cadPerfil').value;
+
+      if (!user) { Swal.fire('Atenção', 'Digite o nome de usuário', 'warning'); return; }
+
+      Swal.fire({ title: 'Criando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const { error } = await client.from('usuarios_yms').insert([{ usuario: user, perfil: perfil, senha: '1234', ativo: true }]);
+      
+      if (error) { Swal.fire('Erro', 'Nome de usuário já existe ou falha no banco.', 'error'); return; }
+
+      Swal.fire({ icon: 'success', title: 'Criado!', text: 'Senha padrão definida como 1234.', timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-2xl' } });
+      fecharModalUsuario(); carregarUsuarios();
+    }
+
+    function resetarSenha(id, user) {
+      Swal.fire({
+        title: 'Resetar Senha', html: `A senha de <b>${user}</b> voltará a ser <b>1234</b>.<br>Ele será forçado a trocar no login.`, icon: 'warning',
+        showCancelButton: true, confirmButtonText: 'Sim, resetar', cancelButtonText: 'Cancelar', confirmButtonColor: '#f59e0b', customClass: { popup: 'rounded-2xl' }
+      }).then(async (result) => {
+        if(result.isConfirmed){
+          const { error } = await client.from('usuarios_yms').update({senha: '1234'}).eq('id', id);
+          if(!error) Swal.fire('Resetado!', 'Senha voltou para 1234', 'success');
+        }
+      });
+    }
+
+    function toggleAtivo(id, statusAtual, user) {
+      const acao = statusAtual ? 'inativar' : 'reativar';
+      Swal.fire({
+        title: 'Alterar Status', text: `Deseja ${acao} o usuário ${user}?`, icon: 'question',
+        showCancelButton: true, confirmButtonText: 'Sim', cancelButtonText: 'Cancelar', confirmButtonColor: '#3b82f6', customClass: { popup: 'rounded-2xl' }
+      }).then(async (result) => {
+        if(result.isConfirmed){
+          const { error } = await client.from('usuarios_yms').update({ativo: !statusAtual}).eq('id', id);
+          if(!error) carregarUsuarios();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

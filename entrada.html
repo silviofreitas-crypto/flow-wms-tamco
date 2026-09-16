@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FLOW YMS | Check-in</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden;}
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+
+    /* Estilo "Operacional" Senior YMS */
+    .input-moderno { 
+      width: 100%; background-color: #ffffff; border: 1px solid #cbd5e1; color: #334155; 
+      font-weight: 500; border-radius: 0.25rem; padding: 0.50rem 0.75rem; outline: none; 
+      transition: all 0.2s; font-size: 0.875rem; 
+    }
+    .input-moderno:focus { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+    .label-moderno { 
+      display: block; font-size: 0.75rem; font-weight: 600; color: #475569; 
+      margin-bottom: 0.25rem; 
+    }
+    .text-asterisk { color: #ef4444; }
+
+    /* Toggle Checkbox */
+    .toggle-checkbox:checked { right: 0; border-color: #3b82f6; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #3b82f6; }
+    .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+    .toggle-label { width: 2.5rem; height: 1.25rem; background-color: #cbd5e1; border-radius: 9999px; transition: all 0.3s; cursor: pointer; position: relative; display: inline-block; }
+    .toggle-label::after { content: ''; position: absolute; top: 2px; left: 2px; width: 1rem; height: 1rem; background-color: white; border-radius: 50%; transition: all 0.3s; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .toggle-checkbox:checked + .toggle-label::after { transform: translateX(1.25rem); }
+
+    /* Sidebar Escura Elegante */
+    .sidebar-bg { background-color: #2b3243; }
+    .sidebar-hover:hover { background-color: #363f52; color: #ffffff; }
+    .sidebar { transition: width 0.3s ease; }
+    .sidebar.collapsed { width: 5rem; }
+    .sidebar.collapsed .sidebar-text { display: none; }
+    .sidebar.collapsed .sidebar-header-content { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link i { margin: 0; }
+    .sidebar.collapsed .sidebar-logo { display: none; }
+    .sidebar.collapsed .sidebar-icon-logo { margin-right: 0; }
+
+    /* Abas Superiores */
+    .tab-btn { border-bottom: 2px solid transparent; color: #64748b; padding-bottom: 0.5rem; font-weight: 600; transition: all 0.2s; }
+    .tab-btn.active { border-bottom-color: #3b82f6; color: #3b82f6; }
+    .tab-btn:hover:not(.active) { color: #334155; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased w-full relative">
+  <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300"></div>
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside id="sidebar" class="sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 sidebar-bg text-slate-300 h-full flex flex-col shrink-0 z-50 shadow-sm">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700/50 shrink-0 sidebar-header-content">
+      <div class="flex items-center w-full">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mr-3 sidebar-icon-logo shadow-lg shadow-blue-500/20"><i class="fa-solid fa-truck-fast text-white text-sm"></i></div>
+        <h1 class="text-lg font-black tracking-widest text-white sidebar-logo sidebar-text">FLOW<span class="text-blue-400 font-light">YMS</span></h1>
+      </div>
+      <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white shrink-0"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+
+    <div class="px-4 py-6 flex-1 overflow-y-auto custom-scrollbar">
+      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2 sidebar-text">Navegação</p>
+      <nav class="space-y-1">
+        <a href="painel.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-chart-pie w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Dashboard</span>
+        </a>
+        <!-- ATIVO -->
+        <a href="entrada.html" id="navCheckin" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm bg-blue-500 text-white shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-clipboard-check w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Check-in Veículos</span>
+        </a>
+        <a href="circuito.html" id="navCircuito" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-route w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Circuito Pátio</span>
+        </a>
+        <a href="usuarios.html" id="navUsuarios" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+            <i class="fa-solid fa-users-gear w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Gestão de Usuários</span>
+        </a>
+        <div class="pt-4 pb-2 px-2">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest sidebar-text">Utilitários</p>
+        </div>
+        <a href="etiquetas.html" id="navEtiqueta" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-qrcode w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Impressão Zebra</span>
+        </a>
+      </nav>
+    </div>
+    
+    <div class="p-4 border-t border-slate-700/50">
+      <div class="sidebar-link flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0 text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>
+          <div class="sidebar-text">
+            <p class="text-xs font-bold text-white truncate w-24" id="sidebarUser">Usuário</p>
+            <p class="text-[9px] text-blue-400 font-bold uppercase" id="sidebarPerfil">Perfil</p>
+          </div>
+        </div>
+        <button onclick="sairDoSistema()" class="text-slate-400 hover:text-rose-400 transition-colors sidebar-text shrink-0"><i class="fa-solid fa-power-off"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= ÁREA PRINCIPAL ================= -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden bg-white relative w-full">
+    
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-10">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleDesktopSidebar()" class="hidden md:flex w-8 h-8 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"><i class="fa-solid fa-bars-staggered"></i></button>
+        <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+        <h2 class="text-lg font-black text-slate-800 tracking-tight">Registro de Check-in</h2>
+      </div>
+      <div class="flex items-center gap-3 hidden sm:flex">
+        <div class="text-right"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Unidade</p><p class="text-xs font-black text-slate-700">Operação Tamco</p></div>
+        <div class="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-200 text-slate-400"><i class="fa-solid fa-building text-xs"></i></div>
+      </div>
+    </header>
+
+    <!-- Abas Superiores (Estilo Senior YMS) -->
+    <div class="bg-white border-b border-slate-200 px-6 pt-4 flex gap-8 shrink-0 shadow-sm">
+      <button class="tab-btn active flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-sm"></i> Informações
+      </button>
+      <button class="tab-btn flex items-center gap-2 cursor-not-allowed opacity-50" title="Aba em desenvolvimento">
+        <i class="fa-solid fa-id-card text-sm"></i> Motorista
+      </button>
+    </div>
+
+    <!-- Área do Formulário -->
+    <main class="flex-1 overflow-y-auto custom-scrollbar relative fade-in bg-white">
+      <div class="p-6 md:p-8 w-full max-w-full pb-24">
+        
+        <p class="text-sm text-slate-600 mb-6 font-medium">Confira os dados para liberar o veículo para o pátio.</p>
+
+        <form id="formCheckin" onsubmit="salvarCheckin(event)">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            
+            <!-- Linha 1 -->
+            <div>
+              <label class="label-moderno">Placa do Veículo <span class="text-asterisk">*</span></label>
+              <input type="text" id="inpPlaca" placeholder="ABC-1234" class="input-moderno uppercase font-bold" required maxlength="8">
+            </div>
+            <div>
+              <label class="label-moderno">Tipo de Veículo <span class="text-asterisk">*</span></label>
+              <select id="inpTipoVeiculo" class="input-moderno cursor-pointer" required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="VAN">Van / Utilitário</option>
+                <option value="TOCO">Caminhão Toco</option>
+                <option value="TRUCK">Caminhão Truck</option>
+                <option value="CARRETA">Carreta</option>
+                <option value="RODOTREM">Rodotrem</option>
+              </select>
+            </div>
+
+            <!-- Linha 2 -->
+            <div class="relative">
+              <label class="label-moderno">Transportadora <span class="text-asterisk">*</span></label>
+              <input type="text" id="inpTransportadora" oninput="buscarTransportadora(this.value)" placeholder="Busque ou digite (Ex: NOBEL)" class="input-moderno uppercase" autocomplete="off" required>
+              <!-- Autocomplete Dropdown Transportadora -->
+              <div id="listaSugestoesTransp" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 hidden max-h-48 overflow-y-auto custom-scrollbar"></div>
+            </div>
+            <div>
+              <label class="label-moderno">Tipo de Atividade <span class="text-asterisk">*</span></label>
+              <select id="inpAtividade" class="input-moderno cursor-pointer" required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Recebimento">Recebimento</option>
+                <option value="Expedição">Expedição</option>
+                <option value="Devolução">Devolução</option>
+                <option value="Transferência">Transferência</option>
+              </select>
+            </div>
+
+            <!-- Linha 3 -->
+            <div>
+              <label class="label-moderno">Tipo de Carga <span class="text-asterisk">*</span></label>
+              <select id="inpTipoCarga" class="input-moderno cursor-pointer" required>
+                <option value="" disabled selected>Selecione...</option>
+                <option value="Granel">Granel</option>
+                <option value="Carga Seca">Carga Seca</option>
+              </select>
+            </div>
+            <div>
+              <div class="flex justify-between items-end mb-1">
+                 <label class="label-moderno mb-0">Produto Predominante <span class="text-asterisk">*</span></label>
+                 <button type="button" onclick="selecionarProduto('DIVERSOS')" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition py-0.5">Preencher "DIVERSOS"</button>
+              </div>
+              <div class="relative">
+                <input type="text" id="inpProduto" oninput="buscarProduto(this.value)" class="input-moderno uppercase" autocomplete="off" required>
+                <!-- Autocomplete Dropdown Produto -->
+                <div id="listaSugestoes" class="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-50 hidden max-h-48 overflow-y-auto custom-scrollbar"></div>
+              </div>
+            </div>
+
+            <!-- Linha 4 (Agenda) -->
+            <div class="col-span-1 md:col-span-2 mt-4 pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <div class="flex flex-col justify-center">
+                <label class="label-moderno mb-2">Opção de Agendamento</label>
+                <div class="flex items-center gap-3">
+                  <div class="relative inline-block w-10 mr-1 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" id="chkSemAgenda" class="toggle-checkbox absolute block w-[1.25rem] h-[1.25rem] rounded-full bg-white border-[2px] appearance-none cursor-pointer" onchange="toggleAgenda()"/>
+                    <label for="chkSemAgenda" class="toggle-label block overflow-hidden h-[1.25rem] rounded-full bg-slate-300 cursor-pointer"></label>
+                  </div>
+                  <div><p class="font-bold text-sm text-slate-700">Veículo Sem Agenda Prévia</p></div>
+                </div>
+              </div>
+              <div id="boxDataAgenda" class="transition-all duration-300">
+                <label class="label-moderno">Data e Hora da Agenda <span class="text-asterisk">*</span></label>
+                <input type="datetime-local" id="inpDataAgenda" class="input-moderno" required>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- BARRA FIXA DE AÇÃO NO RODAPÉ -->
+          <div class="fixed bottom-0 left-0 right-0 md:left-64 bg-slate-50 border-t border-slate-200 p-4 px-6 flex justify-end z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button type="submit" id="btnSalvar" class="w-full sm:w-auto px-8 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2.5 rounded text-sm transition-all shadow-sm flex justify-center items-center gap-2">
+              <i class="fa-solid fa-check"></i> Registrar Entrada
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const perfilLogado = localStorage.getItem('flowYmsPerfil'); 
+    const usuarioLogado = localStorage.getItem('flowYmsUser');
+    
+    // BLOQUEIO DE SEGURANÇA: Somente Transporte e Gestor entram no Check-in
+    if (!perfilLogado || (perfilLogado !== 'Gestor' && perfilLogado !== 'Transporte')) { 
+        window.location.href = 'painel.html'; 
+    }
+
+    const supabaseUrl = 'https://nzoxwptrymtkfhdyzrgl.supabase.co';
+    const supabaseKey = 'sb_publishable_zhURV-j6cbu0bsQ_yeWbrw_cBFeX1UK';
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // ==========================================
+    // LISTA DE TRANSPORTADORAS
+    // ==========================================
+    const transportadorasComuns = [
+      "WEST BRASIL", "VIDEIRA", "VELOSO & LEAL", "VEICULO PAX", "VEICULO ELVIN", "VEICULO DA CASA",
+      "VALGROUP", "TRANSP HAMMES", "TRANSP DPL", "TRANSP CAPIVARI", "TRANSMAGNA", "TRANSLUMA",
+      "TRANSIVAL", "TRANSFERENCIA", "TRANS PITASSI", "TRANS CAVALINHO", "TICO TRANSP", "TAMBORTEC",
+      "TAIPATUR", "STEFANI TRANS", "SORTE LOG", "REGE", "RAFT", "QUIMITRANS", "QLT TRANSPORTES",
+      "PURILUB", "PRIMORDIAL", "NIKA TRANS", "MODULAR", "MIT LOG", "MARTINS", "LWART", "JEGUEDE",
+      "JAUENSE", "JALR TRANSPORTE", "J P TRANSPORTES", "ITAPIRENSE", "ISA S TRANSP",
+      "IPA-IND PETROQUIMICA", "IPA TRANSPORTES", "HUGEST TRANSP", "HIPER TRANSPORTES", "HEXLUB TRANS",
+      "HAMMES TRANSP", "GRIX TRANSP", "GAT LOG", "FUTURO LUBRIF", "FLAMA TRANSP", "EDILOG", "DPL",
+      "DH TRANSP", "COSTA TEXEIRA", "COOPERCARGA", "CAVALINHO", "CAPIVARI", "BUDEL TRANSP", "BRIDA",
+      "BRENNTAG", "BRASALPLA", "ATIVA RIO", "ARTIVINCO", "ANDERSON ALVES", "AM SANTOS", "AEROSPEED",
+      "A ALVES TRANSP", "3R TRANSP", "JSL TRANSP"
+    ];
+
+    window.onload = function() {
+      document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
+      document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
+      
+      document.getElementById('navCircuito').classList.remove('hidden'); 
+      document.getElementById('navCircuito').classList.add('flex');
+
+      // Se for Gestor, exibe a engrenagem de Usuários no menu
+      if (perfilLogado === 'Gestor') {
+        document.getElementById('navUsuarios').classList.remove('hidden'); 
+        document.getElementById('navUsuarios').classList.add('flex');
+      }
+    }
+
+    function toggleDesktopSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    function toggleMobileSidebar() { 
+      const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.remove('opacity-0'), 10); } 
+      else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300); }
+    }
+    function sairDoSistema() { localStorage.clear(); window.location.href = 'index.html'; }
+    
+    function toggleAgenda() {
+      const chk = document.getElementById('chkSemAgenda').checked;
+      const boxAgenda = document.getElementById('boxDataAgenda'); const inpAgenda = document.getElementById('inpDataAgenda');
+      if (chk) { boxAgenda.style.opacity = '0'; setTimeout(() => { boxAgenda.style.display = 'none'; }, 200); inpAgenda.required = false; inpAgenda.value = ""; } 
+      else { boxAgenda.style.display = 'block'; setTimeout(() => { boxAgenda.style.opacity = '1'; }, 10); inpAgenda.required = true; }
+    }
+
+    // ==========================================
+    // AUTOCOMPLETE TRANSPORTADORA
+    // ==========================================
+    function buscarTransportadora(termo) {
+      const termoLimpo = termo.trim().toUpperCase();
+      const caixa = document.getElementById('listaSugestoesTransp');
+
+      if (termoLimpo.length < 2) { caixa.style.display = 'none'; return; }
+
+      const resultados = transportadorasComuns.filter(t => t.toUpperCase().includes(termoLimpo)).slice(0, 10);
+      montarListaBuscaTransp(resultados, termoLimpo);
+    }
+
+    function montarListaBuscaTransp(resultados, termo) {
+      const caixa = document.getElementById('listaSugestoesTransp');
+      caixa.innerHTML = '';
+      
+      const divCustom = document.createElement('div');
+      divCustom.className = 'px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 text-xs text-blue-600 font-bold bg-blue-50/50';
+      divCustom.innerHTML = `<i class="fa-solid fa-pen mr-2"></i> Usar o texto digitado: "${termo}"`;
+      divCustom.onclick = function() { selecionarTransportadora(termo); };
+      caixa.appendChild(divCustom);
+
+      if (resultados.length > 0) {
+        resultados.forEach(function(transp) {
+          const div = document.createElement('div');
+          div.className = 'px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 text-[11px] text-slate-600 flex items-center gap-3 transition-colors';
+          div.innerHTML = `<span class="font-semibold text-slate-800">${transp}</span>`;
+          div.onclick = function() { selecionarTransportadora(transp); };
+          caixa.appendChild(div);
+        });
+      }
+      caixa.style.display = 'block';
+    }
+
+    function selecionarTransportadora(nome) {
+      document.getElementById('inpTransportadora').value = nome;
+      document.getElementById('listaSugestoesTransp').style.display = 'none';
+    }
+
+    // ==========================================
+    // AUTOCOMPLETE DO PRODUTO (SUPABASE)
+    // ==========================================
+    async function buscarProduto(termo) {
+      const termoLimpo = termo.trim();
+      const caixa = document.getElementById('listaSugestoes');
+
+      if (termoLimpo.length < 2) { caixa.style.display = 'none'; return; }
+
+      const { data, error } = await client.from('produtos_tamco')
+        .select('cod_mat, descricao')
+        .or(`cod_mat.ilike.%${termoLimpo}%,descricao.ilike.%${termoLimpo}%`)
+        .limit(10);
+
+      if (error) return;
+      montarListaBuscaProduto(data, termoLimpo);
+    }
+
+    function montarListaBuscaProduto(resultados, termo) {
+      const caixa = document.getElementById('listaSugestoes');
+      caixa.innerHTML = '';
+      
+      const divCustom = document.createElement('div');
+      divCustom.className = 'px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 text-xs text-blue-600 font-bold bg-blue-50/50';
+      divCustom.innerHTML = `<i class="fa-solid fa-pen mr-2"></i> Usar o texto digitado: "${termo.toUpperCase()}"`;
+      divCustom.onclick = function() { selecionarProduto(termo.toUpperCase()); };
+      caixa.appendChild(divCustom);
+
+      if (resultados && resultados.length > 0) {
+        resultados.forEach(function(prod) {
+          const div = document.createElement('div');
+          div.className = 'px-4 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 text-[11px] text-slate-600 flex items-center gap-3 transition-colors';
+          div.innerHTML = `<span class="bg-slate-100 text-slate-700 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">${prod.cod_mat}</span> <span class="font-semibold truncate text-slate-800">${prod.descricao}</span>`;
+          div.onclick = function() { selecionarProduto(prod.descricao); };
+          caixa.appendChild(div);
+        });
+      }
+      caixa.style.display = 'block';
+    }
+
+    function selecionarProduto(descricao) {
+      document.getElementById('inpProduto').value = descricao;
+      document.getElementById('listaSugestoes').style.display = 'none';
+    }
+
+    // Fecha as caixas de sugestão se clicar fora
+    document.addEventListener('click', function(event) {
+      const caixaProd = document.getElementById('listaSugestoes');
+      const inputProd = document.getElementById('inpProduto');
+      if (event.target !== inputProd && !caixaProd.contains(event.target)) { caixaProd.style.display = 'none'; }
+
+      const caixaTransp = document.getElementById('listaSugestoesTransp');
+      const inputTransp = document.getElementById('inpTransportadora');
+      if (caixaTransp && inputTransp) {
+        if (event.target !== inputTransp && !caixaTransp.contains(event.target)) { caixaTransp.style.display = 'none'; }
+      }
+    });
+
+    // ==========================================
+    // INSERÇÃO NO SUPABASE
+    // ==========================================
+    async function salvarCheckin(e) {
+      e.preventDefault(); 
+      const btn = document.getElementById('btnSalvar'); 
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-sm"></i> Processando...'; 
+      btn.disabled = true;
+      
+      const payload = {
+        placa: document.getElementById('inpPlaca').value.toUpperCase().trim(), 
+        tipo_veiculo: document.getElementById('inpTipoVeiculo').value,
+        transportadora: document.getElementById('inpTransportadora').value.toUpperCase().trim(), 
+        tipo_atividade: document.getElementById('inpAtividade').value,
+        tipo_carga: document.getElementById('inpTipoCarga').value, 
+        produto: document.getElementById('inpProduto').value.toUpperCase().trim(),
+        sem_agenda: document.getElementById('chkSemAgenda').checked, 
+        data_agenda: document.getElementById('chkSemAgenda').checked ? null : document.getElementById('inpDataAgenda').value,
+        pula_pesagem: false, 
+        etapa_atual: 'Check-in', 
+        data_checkin: new Date().toISOString()
+      };
+
+      const { error } = await client.from('tracking_yms_tamco').insert([payload]);
+
+      if (error) { 
+        Swal.fire({ icon: 'error', title: 'Erro', text: 'Falha ao registrar entrada.', customClass: { popup: 'rounded-xl' } }); 
+        resetarBotao(btn); 
+        return; 
+      }
+
+      Swal.fire({ 
+        icon: 'success', title: 'Sucesso!', text: `O veículo ${payload.placa} já está na fila do YMS.`, timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-xl' } 
+      }).then(() => { 
+        document.getElementById('formCheckin').reset(); 
+        toggleAgenda(); 
+        resetarBotao(btn); 
+      });
+    }
+
+    function resetarBotao(btn) { 
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Registrar Entrada'; 
+      btn.disabled = false; 
+    }
+  </script>
+</body>
+</html>

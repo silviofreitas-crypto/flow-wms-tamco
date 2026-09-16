@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FLOW YMS | Dashboard Controladoria</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #0f172a;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            display: flex; height: 100vh; overflow: hidden;
+        }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+
+        /* Estilos do Dashboard Executivo */
+        .card-kpi { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            border-radius: 1.25rem; 
+            border: 1px solid rgba(226, 232, 240, 0.8); 
+            padding: 1.5rem; 
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.03); 
+        }
+        .chart-container { position: relative; height: 260px; width: 100%; margin-top: 1rem; }
+        .doughnut-container { position: relative; height: 240px; width: 100%; margin-top: 0.5rem; display: flex; justify-content: center; }
+
+        /* Sidebar Elegante */
+        .sidebar-bg { background-color: #2b3243; }
+        .sidebar-hover:hover { background-color: #363f52; color: #ffffff; }
+        .sidebar { transition: width 0.3s ease; }
+        .sidebar.collapsed { width: 5rem; }
+        .sidebar.collapsed .sidebar-text { display: none; }
+        .sidebar.collapsed .sidebar-header-content { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar.collapsed .sidebar-link i { margin: 0; }
+        .sidebar.collapsed .sidebar-logo { display: none; }
+        .sidebar.collapsed .sidebar-icon-logo { margin-right: 0; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased w-full relative">
+
+  <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300"></div>
+
+  <!-- ================= SIDEBAR ELEGANTE ================= -->
+  <aside id="sidebar" class="sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 sidebar-bg text-slate-300 h-full flex flex-col shrink-0 z-50 shadow-sm">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700/50 shrink-0 sidebar-header-content">
+      <div class="flex items-center w-full">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mr-3 sidebar-icon-logo shadow-lg shadow-blue-500/20"><i class="fa-solid fa-truck-fast text-white text-sm"></i></div>
+        <h1 class="text-lg font-black tracking-widest text-white sidebar-logo sidebar-text">FLOW<span class="text-blue-400 font-light">YMS</span></h1>
+      </div>
+      <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white shrink-0"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+
+    <div class="px-4 py-6 flex-1 overflow-y-auto custom-scrollbar">
+      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2 sidebar-text">Navegação</p>
+      <nav class="space-y-1">
+        <!-- ATIVO -->
+        <a href="painel.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm bg-blue-500 text-white shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-chart-pie w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Dashboard</span>
+        </a>
+        <a href="entrada.html" id="navCheckin" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-clipboard-check w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Check-in Veículos</span>
+        </a>
+        <a href="circuito.html" id="navCircuito" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-route w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Circuito Pátio</span>
+        </a>
+        <a href="usuarios.html" id="navUsuarios" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+            <i class="fa-solid fa-users-gear w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Gestão de Usuários</span>
+        </a>
+        <div class="pt-4 pb-2 px-2">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest sidebar-text">Utilitários</p>
+        </div>
+        <a href="etiquetas.html" id="navEtiqueta" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-qrcode w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Impressão Zebra</span>
+        </a>
+      </nav>
+    </div>
+    
+    <div class="p-4 border-t border-slate-700/50">
+      <div class="sidebar-link flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0 text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>
+          <div class="sidebar-text">
+            <p class="text-xs font-bold text-white truncate w-24" id="sidebarUser">Usuário</p>
+            <p class="text-[9px] text-blue-400 font-bold uppercase" id="sidebarPerfil">Perfil</p>
+          </div>
+        </div>
+        <button onclick="sairDoSistema()" class="text-slate-400 hover:text-rose-400 transition-colors sidebar-text shrink-0" title="Sair"><i class="fa-solid fa-power-off"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= ÁREA PRINCIPAL DO DASHBOARD ================= -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+    
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-10 shadow-sm">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleDesktopSidebar()" class="hidden md:flex w-8 h-8 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"><i class="fa-solid fa-bars-staggered"></i></button>
+        <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
+        <h2 class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-blue-600"></i> Painel de Patio
+        </h2>
+      </div>
+      
+      <!-- Filtros de Data -->
+      <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-inner">
+        <div class="flex flex-col px-2 md:px-3 border-r border-slate-200">
+            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Início (Check-in)</span>
+            <input type="date" id="dataIni" class="bg-transparent border-none outline-none text-xs font-bold text-slate-700 cursor-pointer">
+        </div>
+        <div class="flex flex-col px-2 md:px-3">
+            <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Fim (Check-in)</span>
+            <input type="date" id="dataFim" class="bg-transparent border-none outline-none text-xs font-bold text-slate-700 cursor-pointer">
+        </div>
+        <button onclick="carregarDashboard()" class="bg-slate-800 hover:bg-blue-600 text-white px-4 py-2 rounded shadow transition-colors font-bold text-xs ml-1 flex items-center gap-2">
+            <i class="fa-solid fa-filter"></i> Filtrar
+        </button>
+        <button onclick="exportarExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded shadow transition-colors font-bold text-xs ml-1" title="Exportar Dados">
+            <i class="fa-solid fa-file-csv"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative fade-in">
+        
+        <!-- LINHA 1: KPIs PRINCIPAIS -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            
+            <div class="card-kpi relative overflow-hidden border-t-4 border-t-blue-500">
+                <div class="absolute -right-2 -top-2 opacity-5"><i class="fa-solid fa-truck text-7xl"></i></div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Veículos Atendidos</p>
+                <h3 class="text-3xl font-light text-slate-800 tracking-tighter mb-2" id="kpi-veiculos">0</h3>
+                <div class="flex justify-between text-[10px] font-bold">
+                    <span class="text-indigo-500"><i class="fa-solid fa-box mr-1"></i> Seca: <span id="kpi-vei-seca">0</span></span>
+                    <span class="text-amber-500"><i class="fa-solid fa-weight-scale mr-1"></i> Granel: <span id="kpi-vei-granel">0</span></span>
+                </div>
+            </div>
+
+            <div class="card-kpi relative overflow-hidden border-t-4 border-t-emerald-500">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Gate-to-Gate</p>
+                <h3 class="text-3xl font-light text-emerald-600 tracking-tighter mb-2" id="kpi-gate">00:00h</h3>
+                <p class="text-[10px] font-bold text-slate-500"><i class="fa-solid fa-stopwatch mr-1"></i> Tempo Médio no Pátio</p>
+            </div>
+
+            <div class="card-kpi relative overflow-hidden border-t-4 border-t-indigo-500">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Performance Doca</p>
+                <h3 class="text-3xl font-light text-indigo-600 tracking-tighter mb-2" id="kpi-doca">00:00h</h3>
+                <p class="text-[10px] font-bold text-slate-500"><i class="fa-solid fa-people-carry-box mr-1"></i> Tempo Médio de Operação</p>
+            </div>
+
+            <div class="card-kpi relative overflow-hidden border-t-4 border-t-orange-500">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Paletes Movimentados</p>
+                <h3 class="text-3xl font-light text-slate-800 tracking-tighter mb-2" id="kpi-paletes">0</h3>
+                <div class="flex justify-between text-[10px] font-bold">
+                    <span class="text-emerald-500"><i class="fa-solid fa-arrow-down mr-1"></i> IN: <span id="kpi-pal-in">0</span></span>
+                    <span class="text-rose-500"><i class="fa-solid fa-arrow-up mr-1"></i> OUT: <span id="kpi-pal-out">0</span></span>
+                </div>
+            </div>
+
+            <div class="card-kpi relative overflow-hidden border-t-4 border-t-cyan-500">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume Granel (Estimado)</p>
+                <h3 class="text-3xl font-light text-slate-800 tracking-tighter mb-2" id="kpi-granel">0</h3>
+                <div class="flex justify-between text-[10px] font-bold">
+                    <span class="text-emerald-500"><i class="fa-solid fa-arrow-down mr-1"></i> IN: <span id="kpi-gra-in">0</span></span>
+                    <span class="text-rose-500"><i class="fa-solid fa-arrow-up mr-1"></i> OUT: <span id="kpi-gra-out">0</span></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- LINHA 2: GRÁFICOS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            
+            <div class="card-kpi flex flex-col">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base tracking-tight">Atendimentos Diários por Tipo</h3>
+                    <p class="text-[10px] font-medium text-slate-400 mt-0.5">Volume de Recebimento vs Expedição.</p>
+                </div>
+                <div class="chart-container flex-1"><canvas id="chartAtendimentos"></canvas></div>
+            </div>
+
+            <div class="card-kpi flex flex-col">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base tracking-tight">Curva ABC de Produtos (Top 7)</h3>
+                    <p class="text-[10px] font-medium text-slate-400 mt-0.5">Produtos com maior frequência de movimentação no pátio.</p>
+                </div>
+                <div class="doughnut-container flex-1"><canvas id="chartCurvaABC"></canvas></div>
+            </div>
+
+            <div class="card-kpi flex flex-col">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base tracking-tight">Evolução do Tempo de Pátio Médio</h3>
+                    <p class="text-[10px] font-medium text-slate-400 mt-0.5">Comparativo do Tempo de Doca vs Tempo Total (Gate to Gate).</p>
+                </div>
+                <div class="chart-container flex-1"><canvas id="chartTempos"></canvas></div>
+            </div>
+
+            <div class="card-kpi flex flex-col">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base tracking-tight">Pareto de Atrasos (>3h Carga Seca)</h3>
+                    <p class="text-[10px] font-medium text-slate-400 mt-0.5">Principais ofensores de SLA apontados na saída.</p>
+                </div>
+                <div class="chart-container flex-1"><canvas id="chartAtrasos"></canvas></div>
+            </div>
+
+        </div>
+
+    </main>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = "#64748b";
+    Chart.defaults.scale.grid.color = "rgba(226, 232, 240, 0.6)"; 
+    Chart.defaults.scale.grid.drawBorder = false;
+
+    // Conexão YMS
+    const supabaseUrl = 'https://nzoxwptrymtkfhdyzrgl.supabase.co';
+    const supabaseKey = 'sb_publishable_zhURV-j6cbu0bsQ_yeWbrw_cBFeX1UK';
+    const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const perfilLogado = localStorage.getItem('flowYmsPerfil');
+    const usuarioLogado = localStorage.getItem('flowYmsUser');
+    if (!perfilLogado) { window.location.href = 'index.html'; }
+
+    let chartAtend, chartABC, chartTempo, chartAtraso;
+    let exportData = []; 
+    const paletaPremium = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#06b6d4', '#f97316', '#64748b'];
+
+    window.onload = () => {
+        document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
+        document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
+        
+        // Habilita menus baseado no perfil
+        if (perfilLogado === 'Gestor') {
+            document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex');
+            document.getElementById('navCircuito').classList.remove('hidden'); document.getElementById('navCircuito').classList.add('flex');
+            document.getElementById('navUsuarios').classList.remove('hidden'); document.getElementById('navUsuarios').classList.add('flex');
+        } else if (perfilLogado === 'Transporte') {
+            document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex');
+            document.getElementById('navCircuito').classList.remove('hidden'); document.getElementById('navCircuito').classList.add('flex');
+        }
+
+        // Preenche últimos 30 dias por padrão
+        const hoje = new Date();
+        const trintaDias = new Date(hoje);
+        trintaDias.setDate(hoje.getDate() - 30);
+        
+        document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
+        document.getElementById('dataIni').value = trintaDias.toISOString().split('T')[0];
+        
+        carregarDashboard();
+    };
+
+    function toggleDesktopSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    function toggleMobileSidebar() { 
+        const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.remove('opacity-0'), 10); } 
+        else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300); }
+    }
+    function sairDoSistema() { localStorage.clear(); window.location.href = 'index.html'; }
+
+    function createGradient(ctx, colorStart, colorEnd, horizontal = false) {
+        let gradient = horizontal ? ctx.createLinearGradient(0, 0, 500, 0) : ctx.createLinearGradient(0, 0, 0, 350);
+        gradient.addColorStop(0, colorStart);
+        gradient.addColorStop(1, colorEnd);
+        return gradient;
+    }
+
+    function formatarHoraHhMm(horasDecimais) {
+        if (!horasDecimais || isNaN(horasDecimais) || horasDecimais < 0) return "00:00h";
+        let h = Math.floor(horasDecimais);
+        let m = Math.round((horasDecimais - h) * 60);
+        if (m === 60) { h++; m = 0; }
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + 'h';
+    }
+
+    // Tenta extrair apenas números de textos como "15 TON" ou "15000 LTS"
+    function extrairNumero(str) {
+        if(!str) return 0;
+        let numStr = str.replace(/[^\d.,]/g, '').replace(',', '.');
+        return parseFloat(numStr) || 0;
+    }
+
+    async function carregarDashboard() {
+        Swal.fire({ title: 'Processando KPI...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        
+        let dtIni = document.getElementById('dataIni').value + 'T00:00:00.000Z';
+        let dtFim = document.getElementById('dataFim').value + 'T23:59:59.999Z';
+        exportData = [];
+
+        try {
+            const { data, error } = await client.from('tracking_yms_tamco')
+                .select('*')
+                .gte('data_checkin', dtIni)
+                .lte('data_checkin', dtFim)
+                .order('data_checkin', { ascending: true });
+
+            if (error) throw error;
+
+            // ==========================================
+            // VARIÁVEIS DE KPI
+            // ==========================================
+            let vSeca = 0, vGranel = 0;
+            let sumGateToGate = 0, countGate = 0;
+            let sumDoca = 0, countDoca = 0;
+            let palIn = 0, palOut = 0;
+            let graIn = 0, graOut = 0;
+            
+            let mapABC = {};
+            let mapAtrasos = {};
+            let mapDiario = {};
+
+            data.forEach(v => {
+                exportData.push(v); // Para o Excel
+                
+                let isSeca = v.tipo_carga === 'Carga Seca';
+                let isGranel = v.tipo_carga === 'Granel';
+                let isRec = v.tipo_atividade === 'Recebimento';
+                let isExp = v.tipo_atividade === 'Expedição';
+
+                if (isSeca) vSeca++;
+                if (isGranel) vGranel++;
+
+                // Tempos (Gate to Gate) = data_saida - data_checkin
+                // Se não saiu, usa a liberação ou o momento atual (pra veículos no pátio, usamos apenas os que sairam para média real de fim de ciclo, ou liberados)
+                if (v.data_saida || v.data_doca_fim) {
+                    let fimGate = v.data_saida ? new Date(v.data_saida) : new Date(v.data_doca_fim);
+                    let diffGate = (fimGate - new Date(v.data_checkin)) / 3600000;
+                    if(diffGate > 0) { sumGateToGate += diffGate; countGate++; }
+                }
+
+                // Tempo Doca = data_doca_fim - data_doca_inicio
+                if (v.data_doca_inicio && v.data_doca_fim) {
+                    let diffDoca = (new Date(v.data_doca_fim) - new Date(v.data_doca_inicio)) / 3600000;
+                    if(diffDoca > 0) { sumDoca += diffDoca; countDoca++; }
+                }
+
+                // Volumes Carga Seca
+                if (v.qtd_paletes) {
+                    let qtd = parseInt(v.qtd_paletes) || 0;
+                    if(isRec) palIn += qtd;
+                    else palOut += qtd; // Expedição, Transf, Dev
+                }
+
+                // Volumes Granel
+                if (v.peso_volume_granel) {
+                    let val = extrairNumero(v.peso_volume_granel);
+                    if(isRec) graIn += val;
+                    else graOut += val;
+                }
+
+                // Curva ABC Produtos
+                let prod = v.produto || 'DIVERSOS';
+                if (!mapABC[prod]) mapABC[prod] = 0;
+                mapABC[prod]++;
+
+                // Pareto de Atrasos
+                if (v.motivo_atraso) {
+                    let m = v.motivo_atraso.toUpperCase();
+                    if(!mapAtrasos[m]) mapAtrasos[m] = 0;
+                    mapAtrasos[m]++;
+                }
+
+                // Agrupamento Diário
+                let dia = v.data_checkin.split('T')[0];
+                if (!mapDiario[dia]) mapDiario[dia] = { recSeca: 0, expSeca: 0, recGra: 0, expGra: 0, sumG2G: 0, cG2G: 0, sumDoc: 0, cDoc: 0 };
+                
+                if (isSeca && isRec) mapDiario[dia].recSeca++;
+                if (isSeca && !isRec) mapDiario[dia].expSeca++;
+                if (isGranel && isRec) mapDiario[dia].recGra++;
+                if (isGranel && !isRec) mapDiario[dia].expGra++;
+
+                if (v.data_saida) {
+                    mapDiario[dia].sumG2G += ((new Date(v.data_saida) - new Date(v.data_checkin)) / 3600000);
+                    mapDiario[dia].cG2G++;
+                }
+                if (v.data_doca_inicio && v.data_doca_fim) {
+                    mapDiario[dia].sumDoc += ((new Date(v.data_doca_fim) - new Date(v.data_doca_inicio)) / 3600000);
+                    mapDiario[dia].cDoc++;
+                }
+            });
+
+            // Preenche KPIs Cards
+            document.getElementById('kpi-veiculos').innerText = data.length;
+            document.getElementById('kpi-vei-seca').innerText = vSeca;
+            document.getElementById('kpi-vei-granel').innerText = vGranel;
+            
+            let avgGate = countGate > 0 ? (sumGateToGate / countGate) : 0;
+            document.getElementById('kpi-gate').innerText = formatarHoraHhMm(avgGate);
+            
+            let avgDoca = countDoca > 0 ? (sumDoca / countDoca) : 0;
+            document.getElementById('kpi-doca').innerText = formatarHoraHhMm(avgDoca);
+
+            document.getElementById('kpi-paletes').innerText = (palIn + palOut).toLocaleString('pt-BR');
+            document.getElementById('kpi-pal-in').innerText = palIn.toLocaleString('pt-BR');
+            document.getElementById('kpi-pal-out').innerText = palOut.toLocaleString('pt-BR');
+
+            document.getElementById('kpi-granel').innerText = (graIn + graOut).toLocaleString('pt-BR');
+            document.getElementById('kpi-gra-in').innerText = graIn.toLocaleString('pt-BR');
+            document.getElementById('kpi-gra-out').innerText = graOut.toLocaleString('pt-BR');
+
+            // ==========================================
+            // PREPARAÇÃO DE ARRAYS PARA GRÁFICOS
+            // ==========================================
+            let sortedDates = Object.keys(mapDiario).sort();
+            let labelsDatas = sortedDates.map(d => { let p=d.split('-'); return `${p[2]}/${p[1]}`; });
+            
+            let dataRecSeca = sortedDates.map(d => mapDiario[d].recSeca);
+            let dataExpSeca = sortedDates.map(d => mapDiario[d].expSeca);
+            let dataRecGra = sortedDates.map(d => mapDiario[d].recGra);
+            let dataExpGra = sortedDates.map(d => mapDiario[d].expGra);
+
+            let dataGateEvol = sortedDates.map(d => mapDiario[d].cG2G > 0 ? (mapDiario[d].sumG2G / mapDiario[d].cG2G) : 0);
+            let dataDocaEvol = sortedDates.map(d => mapDiario[d].cDoc > 0 ? (mapDiario[d].sumDoc / mapDiario[d].cDoc) : 0);
+
+            let abcList = Object.keys(mapABC).map(k => ({nome: k, qtd: mapABC[k]})).sort((a,b) => b.qtd - a.qtd).slice(0, 7);
+            let atrasoList = Object.keys(mapAtrasos).map(k => ({nome: k, qtd: mapAtrasos[k]})).sort((a,b) => b.qtd - a.qtd);
+
+            // ==========================================
+            // GRÁFICO 1: ATENDIMENTOS DIÁRIOS
+            // ==========================================
+            const ctxAtend = document.getElementById('chartAtendimentos').getContext('2d');
+            if(chartAtend) chartAtend.destroy();
+            chartAtend = new Chart(ctxAtend, {
+                type: 'bar',
+                data: {
+                    labels: labelsDatas,
+                    datasets: [
+                        { label: 'Rec. Seca', data: dataRecSeca, backgroundColor: '#3b82f6', stack: 'Stack 0' },
+                        { label: 'Exp. Seca', data: dataExpSeca, backgroundColor: '#93c5fd', stack: 'Stack 0' },
+                        { label: 'Rec. Granel', data: dataRecGra, backgroundColor: '#f59e0b', stack: 'Stack 1' },
+                        { label: 'Exp. Granel', data: dataExpGra, backgroundColor: '#fde68a', stack: 'Stack 1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10, weight:'bold'} } }, 
+                        tooltip: { backgroundColor: '#0f172a', titleFont: { size: 12 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 8 },
+                        datalabels: { display: false } 
+                    },
+                    scales: { y: { stacked: true, grid: { color: 'rgba(226, 232, 240, 0.6)' }, border: {display: false} }, x: { stacked: true, grid: { display: false }, ticks: { font: {weight: 'bold'}, color: '#64748b' } } }
+                }
+            });
+
+            // ==========================================
+            // GRÁFICO 2: CURVA ABC
+            // ==========================================
+            const ctxABC = document.getElementById('chartCurvaABC').getContext('2d');
+            if(chartABC) chartABC.destroy();
+            chartABC = new Chart(ctxABC, {
+                type: 'doughnut',
+                data: {
+                    labels: abcList.map(i => i.nome.length > 20 ? i.nome.substring(0,20)+'...' : i.nome),
+                    datasets: [{ data: abcList.map(i => i.qtd), backgroundColor: paletaPremium, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 6 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: {size: 10, weight: '600'} } }, datalabels: { display: false } }
+                }
+            });
+
+            // ==========================================
+            // GRÁFICO 3: EVOLUÇÃO DE TEMPOS (LINHA)
+            // ==========================================
+            const ctxTempo = document.getElementById('chartTempos').getContext('2d');
+            if(chartTempo) chartTempo.destroy();
+            chartTempo = new Chart(ctxTempo, {
+                type: 'line',
+                data: {
+                    labels: labelsDatas,
+                    datasets: [
+                        { label: 'Tempo Gate-to-Gate', data: dataGateEvol, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, pointRadius: 3 },
+                        { label: 'Tempo Doca Operação', data: dataDocaEvol, borderColor: '#6366f1', borderDash: [5,5], tension: 0.4, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: {weight: '600', size: 10} } }, datalabels: { display: false }, tooltip: { backgroundColor: '#0f172a', callbacks: { label: (c) => c.dataset.label + ': ' + formatarHoraHhMm(c.raw) } } },
+                    scales: { y: { beginAtZero: true, border: {display: false}, ticks: { callback: (val) => formatarHoraHhMm(val), font: {size: 10} } }, x: { grid: { display: false }, ticks: { font: {weight: 'bold', size: 10} } } }
+                }
+            });
+
+            // ==========================================
+            // GRÁFICO 4: PARETO DE ATRASOS (BARRA HORIZONTAL)
+            // ==========================================
+            const ctxAtraso = document.getElementById('chartAtrasos').getContext('2d');
+            if(chartAtraso) chartAtraso.destroy();
+            chartAtraso = new Chart(ctxAtraso, {
+                type: 'bar',
+                data: {
+                    labels: atrasoList.map(i => i.nome), 
+                    datasets: [{ label: 'Qtd Veículos', data: atrasoList.map(i => i.qtd), backgroundColor: createGradient(ctxAtraso, 'rgba(244, 63, 94, 0.8)', 'rgba(244, 63, 94, 0.2)', true), borderColor: '#f43f5e', borderWidth: 1, borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { padding: { right: 30 } }, 
+                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0f172a' }, datalabels: { anchor: 'end', align: 'right', font: {weight: 'bold', size: 10}, color: '#475569' } },
+                    scales: { y: { grid: { display: false }, ticks: { font: {size: 9, weight: 'bold'}, color: '#334155' } }, x: { display: false, beginAtZero: true } }
+                }
+            });
+
+            Swal.close();
+        } catch(e) {
+            console.error(e);
+            Swal.fire('Erro', 'Falha ao gerar painel: ' + e.message, 'error');
+        }
+    }
+
+    // ==========================================
+    // EXPORTAÇÃO EXCEL COM DATA FORMATADA (BR)
+    // ==========================================
+    function formatarDataBR(isoStr) {
+        if (!isoStr) return "";
+        let d = new Date(isoStr);
+        let dia = String(d.getDate()).padStart(2, '0');
+        let mes = String(d.getMonth() + 1).padStart(2, '0');
+        let ano = d.getFullYear();
+        let hr = String(d.getHours()).padStart(2, '0');
+        let min = String(d.getMinutes()).padStart(2, '0');
+        let seg = String(d.getSeconds()).padStart(2, '0');
+        return `${dia}/${mes}/${ano} ${hr}:${min}:${seg}`;
+    }
+
+    function exportarExcel() {
+        if(exportData.length === 0) return Swal.fire('Sem Dados', 'Nenhum registro para exportar no período.', 'info');
+
+        let csvContent = "\uFEFF"; 
+        let headers = ["PLACA", "TIPO_VEICULO", "TRANSPORTADORA", "ATIVIDADE", "TIPO_CARGA", "PRODUTO", "DATA_CHECKIN", "DATA_SAIDA", "ETAPA_ATUAL", "QTD_PALETES", "VOLUME_GRANEL", "MOTIVO_ATRASO_SAIDA"];
+        csvContent += headers.join(";") + "\n";
+
+        exportData.forEach(r => {
+            // Formata as datas antes de jogar no CSV
+            let dataCheckinBR = formatarDataBR(r.data_checkin);
+            let dataSaidaBR = formatarDataBR(r.data_saida);
+
+            let row = [ 
+                r.placa, 
+                r.tipo_veiculo, 
+                r.transportadora, 
+                r.tipo_atividade, 
+                r.tipo_carga, 
+                `"${r.produto || ''}"`, 
+                dataCheckinBR, 
+                dataSaidaBR, 
+                r.etapa_atual, 
+                r.qtd_paletes || '', 
+                `"${r.peso_volume_granel || ''}"`, 
+                `"${r.motivo_atraso || ''}"` 
+            ];
+            csvContent += row.join(";") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        let dt1 = document.getElementById('dataIni').value; let dt2 = document.getElementById('dataFim').value;
+        link.setAttribute("download", `FLOW_YMS_Dashboard_${dt1}_a_${dt2}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
