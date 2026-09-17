@@ -225,7 +225,7 @@
     window.onload = function() {
       document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
       document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
-      if (perfilLogado === 'Gestor') { 
+      if (perfilLogado !== 'Gestor') { 
           document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex'); 
           document.getElementById('navUsuarios').classList.remove('hidden'); document.getElementById('navUsuarios').classList.add('flex'); 
       }

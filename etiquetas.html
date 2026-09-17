@@ -33,13 +33,21 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* =======================================================
-       NOVO PADRÃO DA SIDEBAR
+       LAYOUT VISUAL DA SIDEBAR NOVA
        ======================================================= */
     .sidebar-bg { background-color: #2b3243; }
     .sidebar-hover:hover { background-color: #363f52; color: #ffffff; }
+    .sidebar { transition: width 0.3s ease; }
+    .sidebar.collapsed { width: 5rem; }
+    .sidebar.collapsed .sidebar-text { display: none; }
+    .sidebar.collapsed .sidebar-header-content { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+    .sidebar.collapsed .sidebar-link i { margin: 0; }
+    .sidebar.collapsed .sidebar-logo { display: none; }
+    .sidebar.collapsed .sidebar-icon-logo { margin-right: 0; }
 
     /* =======================================================
-       LAYOUT VISUAL NA TELA DO PC (MANTIDO)
+       LAYOUT VISUAL NA TELA DO PC (INTACTO DO SEU CÓDIGO)
        ======================================================= */
     .preview-container { 
       display: flex; justify-content: center; align-items: center;
@@ -72,14 +80,20 @@
     .qr-text { font-weight: 900; color: #000; margin-top: 2px; font-size: 12px; }
 
     /* =======================================================
-       BLINDAGEM DE IMPRESSÃO ZEBRA (MANTIDA)
+       BLINDAGEM DE IMPRESSÃO ZEBRA (100% SEU CÓDIGO ANTIGO)
        ======================================================= */
     @media print {
-      @page { size: 158mm 108mm; margin: 0; }
+      @page { 
+        size: 158mm 108mm; 
+        margin: 0; 
+      }
       html, body { 
-        width: 158mm !important; height: 108mm !important; 
-        margin: 0 !important; padding: 0 !important; 
-        overflow: hidden !important; background: white !important; 
+        width: 158mm !important; 
+        height: 108mm !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        overflow: hidden !important; 
+        background: white !important; 
       }
       body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       body * { visibility: hidden; margin: 0; }
@@ -90,22 +104,27 @@
         position: absolute; left: 0; top: 0; 
         width: 158mm !important; height: 108mm !important; 
         margin: 0 !important; padding: 0 !important; 
-        background: white !important; display: block !important;
+        background: white !important; 
+        display: block !important;
         border-radius: 0; box-sizing: border-box; border: none;
       }
 
       .etiqueta-box {
-        width: 140mm !important; height: 90mm !important;
+        width: 140mm !important; 
+        height: 90mm !important;
         position: absolute !important;
-        top: 2mm !important; left: 50% !important;
-        transform: translateX(-50%) !important;
+        
+        /* A MÁGICA AQUI: Puxamos a etiqueta para o topo (2mm) */
+        top: 2mm !important; 
+        left: 50% !important;
+        transform: translateX(-50%) !important; /* Mantém centralizado apenas nas laterais */
         margin: 0 !important;
       }
       
       .esconder-impressao, .sidebar, #sidebarOverlay { display: none !important; }
     }
 
-    /* Tabelas e Inputs (MANTIDOS) */
+    /* Tabelas SaaS Modernas e Inputs */
     .saas-table th { background-color: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; border-bottom: 2px solid #f1f5f9; padding: 1.25rem 1rem; text-align: left; }
     .saas-table td { padding: 1.25rem 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 0.875rem; font-weight: 500; vertical-align: middle; }
     .saas-table tbody tr { transition: all 0.2s ease; background-color: #ffffff; }
@@ -119,70 +138,57 @@
 
 <body class="text-slate-800 antialiased w-full relative">
 
-  <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300"></div>
+  <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden transition-opacity opacity-0 duration-300"></div>
 
-  <!-- ================= SIDEBAR ELEGANTE (NOVO PADRÃO) ================= -->
-  <aside id="sidebar" class="sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 sidebar-bg text-slate-300 h-full flex flex-col shrink-0 z-50 shadow-sm border-r border-slate-800/30">
-    
-    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700/50 shrink-0">
-      <div class="flex items-center">
-        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-blue-500/20">
-          <i class="fa-solid fa-truck-fast text-white text-sm"></i>
-        </div>
-        <h1 class="text-lg font-black tracking-widest text-white">FLOW<span class="text-blue-400 font-light">YMS</span></h1>
+  <!-- ================= SIDEBAR ELEGANTE ================= -->
+  <aside id="sidebar" class="sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 w-64 sidebar-bg text-slate-300 h-full flex flex-col shrink-0 z-50 shadow-sm">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700/50 shrink-0 sidebar-header-content">
+      <div class="flex items-center w-full">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0 mr-3 sidebar-icon-logo shadow-lg shadow-blue-500/20"><i class="fa-solid fa-truck-fast text-white text-sm"></i></div>
+        <h1 class="text-lg font-black tracking-widest text-white sidebar-logo sidebar-text">FLOW<span class="text-blue-400 font-light">YMS</span></h1>
       </div>
-      <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-xl"></i>
-      </button>
+      <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white shrink-0"><i class="fa-solid fa-xmark text-xl"></i></button>
     </div>
 
     <div class="px-4 py-6 flex-1 overflow-y-auto custom-scrollbar">
-      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2">Navegação</p>
-      
+      <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 px-2 sidebar-text">Navegação</p>
       <nav class="space-y-1">
-        <!-- Links Base -->
-        <a href="painel.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
-          <i class="fa-solid fa-house w-5 text-center"></i> Painel Inicial
+        <a href="painel.html" class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-chart-pie w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Dashboard</span>
         </a>
-
-        <a href="entrada.html" id="navCheckin" class="hidden w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
-          <i class="fa-solid fa-clipboard-check w-5 text-center"></i> Check-in Veículos
+        <a href="entrada.html" id="navCheckin" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-clipboard-check w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Check-in Veículos</span>
         </a>
-
-        <a href="circuito.html" id="navCircuito" class="hidden w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
-          <i class="fa-solid fa-route w-5 text-center"></i> Circuito Pátio
+        <a href="circuito.html" id="navCircuito" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+          <i class="fa-solid fa-route w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Circuito Pátio</span>
         </a>
-
+        <a href="usuarios.html" id="navUsuarios" class="hidden sidebar-link w-full items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-slate-400 sidebar-hover">
+            <i class="fa-solid fa-users-gear w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Gestão de Usuários</span>
+        </a>
         <div class="pt-4 pb-2 px-2">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Módulo Atual</p>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest sidebar-text">Utilitários</p>
         </div>
-
-        <!-- Módulo Específico da Etiqueta (Lógica JS controla cor) -->
+        <!-- ATIVO -->
         <button onclick="navegarDentroDoModulo('tela-etiqueta')" id="btnNavEtiqueta" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm text-left bg-blue-500 text-white shadow-md shadow-blue-500/20">
-          <i class="fa-solid fa-qrcode w-5 text-center"></i> Impressão Zebra
+          <i class="fa-solid fa-qrcode w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Impressão Zebra</span>
         </button>
-
         <button onclick="verificarAcessoCadastro()" id="btnNavCadastro" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-left text-slate-400 sidebar-hover">
-          <i class="fa-solid fa-database w-5 text-center"></i> Base de Produtos
+          <i class="fa-solid fa-database w-5 text-center shrink-0"></i> <span class="sidebar-text truncate">Base de Produtos</span>
           <i class="fa-solid fa-lock text-[10px] ml-auto text-slate-500" id="iconLock"></i>
         </button>
       </nav>
     </div>
     
     <div class="p-4 border-t border-slate-700/50">
-      <div class="flex items-center justify-between">
+      <div class="sidebar-link flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center">
-            <i class="fa-solid fa-user text-slate-300 text-xs"></i>
-          </div>
-          <div>
+          <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0 text-slate-300"><i class="fa-solid fa-user text-xs"></i></div>
+          <div class="sidebar-text">
             <p class="text-xs font-bold text-white truncate w-24" id="sidebarUser">Usuário</p>
             <p class="text-[9px] text-blue-400 font-bold uppercase" id="sidebarPerfil">Perfil</p>
           </div>
         </div>
-        <button onclick="sairDoSistema()" class="text-slate-400 hover:text-rose-400 transition-colors">
-          <i class="fa-solid fa-power-off"></i>
-        </button>
+        <button onclick="sairDoSistema()" class="text-slate-400 hover:text-rose-400 transition-colors sidebar-text shrink-0" title="Sair"><i class="fa-solid fa-power-off"></i></button>
       </div>
     </div>
   </aside>
@@ -190,10 +196,10 @@
   <!-- ================= ÁREA PRINCIPAL ================= -->
   <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#f4f7f9] relative w-full">
     
-    <!-- NOVO CABEÇALHO CLARO -->
-    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 esconder-impressao z-10 shadow-sm">
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 esconder-impressao z-10 shadow-sm">
       <div class="flex items-center gap-3 md:gap-4">
-        <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg focus:outline-none">
+        <button onclick="toggleDesktopSidebar()" class="hidden md:flex w-8 h-8 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"><i class="fa-solid fa-bars-staggered"></i></button>
+        <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg focus:outline-none">
           <i class="fa-solid fa-bars text-xl"></i>
         </button>
         <h2 class="text-lg font-black text-slate-800 tracking-tight" id="titulo-pagina">Gerador de Etiquetas</h2>
@@ -207,14 +213,18 @@
 
     <main class="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar relative">
       
-      <!-- TELA 1: ETIQUETAS (MANTIDA INTACTA) -->
+      <!-- ========================================== -->
+      <!-- TELA 1: ETIQUETAS -->
+      <!-- ========================================== -->
       <div id="tela-etiqueta" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 fade-in">
         
         <div class="lg:col-span-4 flex flex-col gap-6 esconder-impressao">
+          
           <div class="bg-white border border-slate-200 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-sm">
             <h3 class="text-sm font-black text-slate-800 mb-4 md:mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
               <i class="fa-solid fa-magnifying-glass text-blue-500"></i> Localizar Material
             </h3>
+            
             <div class="relative">
               <label class="label-moderno">Pesquisa Rápida</label>
               <div class="relative">
@@ -229,6 +239,7 @@
             <h3 class="text-sm font-black text-slate-800 mb-4 md:mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
               <i class="fa-solid fa-sliders text-blue-500"></i> Variáveis do Lote
             </h3>
+            
             <div class="grid grid-cols-2 gap-3 md:gap-5 mb-4 md:mb-5">
               <div>
                 <label class="label-moderno">Lote</label>
@@ -239,6 +250,7 @@
                 <input type="number" id="inpQtd" value="1" oninput="atualizarEtiqueta()" class="input-moderno text-center font-black text-blue-600 px-3">
               </div>
             </div>
+
             <div class="grid grid-cols-2 gap-3 md:gap-5">
               <div>
                 <label class="label-moderno">Entrada</label>
@@ -254,9 +266,11 @@
           <button onclick="window.print()" class="w-full bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold py-4 rounded-2xl text-sm transition-all shadow-xl shadow-slate-900/10 flex justify-center items-center gap-3">
             <i class="fa-solid fa-print text-lg"></i> Disparar Impressão Zebra
           </button>
+
         </div>
 
         <div class="lg:col-span-8 preview-container shadow-inner border border-slate-200 overflow-x-auto justify-start md:justify-center">
+          
           <div id="box-etiqueta" class="etiqueta-box">
             <table class="table-etiqueta">
               <tr>
@@ -294,16 +308,21 @@
                 <td class="val-content" id="lblQtd" style="text-align: center;">-</td>
               </tr>
             </table>
+
             <div class="footer-meta">
               <div id="lblDataEmissao" style="width: 100%; text-align: right;">Data emissão: --/--/---- --:--:--</div>
             </div>
           </div>
+
         </div>
 
       </div>
 
-      <!-- TELA 2: CADASTRO DE PRODUTOS (MANTIDA INTACTA) -->
+      <!-- ========================================== -->
+      <!-- TELA 2: CADASTRO -->
+      <!-- ========================================== -->
       <div id="tela-cadastro" class="max-w-7xl mx-auto hidden flex-col gap-4 md:gap-6 fade-in">
+        
         <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm">
           <div class="relative w-full sm:w-[400px]">
             <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -326,17 +345,21 @@
                 </tr>
               </thead>
               <tbody id="corpoTabela">
+                <!-- Dados via JS -->
               </tbody>
             </table>
           </div>
         </div>
+
       </div>
     </main>
+
   </div>
 
   <!-- MODAL DE CADASTRO/EDIÇÃO -->
   <div id="modal-cadastro" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm fade-in px-4">
     <div class="bg-white w-full max-w-[450px] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      
       <div class="flex justify-between items-center px-6 md:px-8 py-5 md:py-6 border-b border-slate-100 bg-white">
         <h3 id="modal-titulo" class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-3">
           <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -351,6 +374,7 @@
 
       <div class="p-6 md:p-8 space-y-4 md:space-y-5 bg-slate-50/50">
         <input type="hidden" id="cadAcao" value="novo">
+        
         <div>
           <label class="label-moderno">Cód Material <span class="text-rose-500">*</span></label>
           <input type="text" id="cadCodigo" placeholder="Ex: T1MV0001" class="input-moderno uppercase bg-white">
@@ -379,15 +403,8 @@
 
   <script>
     // ==========================================
-    // INICIALIZAÇÃO DE SEGURANÇA E SUPABASE
+    // INICIALIZAÇÃO DO SUPABASE E ESTILOS
     // ==========================================
-    const perfilLogado = localStorage.getItem('flowYmsPerfil');
-    const usuarioLogado = localStorage.getItem('flowYmsUser');
-
-    if (!perfilLogado) {
-      window.location.href = 'index.html';
-    }
-
     const supabaseUrl = 'https://nzoxwptrymtkfhdyzrgl.supabase.co';
     const supabaseKey = 'sb_publishable_zhURV-j6cbu0bsQ_yeWbrw_cBFeX1UK';
     const createSupabaseClient = window.supabase ? window.supabase.createClient : supabase.createClient;
@@ -398,26 +415,45 @@
 
     const swalEstiloInput = `
       <style>
-        .swal2-input { background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 0.75rem !important; box-shadow: none !important; color: #334155 !important; font-weight: 600 !important; height: 3rem !important; margin-top: 1rem !important; }
-        .swal2-input:focus { background-color: #ffffff !important; border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important; }
+        .swal2-input {
+          background-color: #f8fafc !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 0.75rem !important;
+          box-shadow: none !important;
+          color: #334155 !important;
+          font-weight: 600 !important;
+          height: 3rem !important;
+          margin-top: 1rem !important;
+        }
+        .swal2-input:focus {
+          background-color: #ffffff !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
       </style>
     `;
 
     // ==========================================
-    // REGRAS DE EXIBIÇÃO DA SIDEBAR (PERFIS)
+    // LÓGICA DE NAVEGAÇÃO E PERFIS
     // ==========================================
+    const perfilLogado = localStorage.getItem('flowYmsPerfil');
+    const usuarioLogado = localStorage.getItem('flowYmsUser');
+
+    if (!perfilLogado) {
+      window.location.href = 'index.html';
+    }
+
     window.onload = function() {
       document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
       document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
 
-      const navCheckin = document.getElementById('navCheckin');
-      const navCircuito = document.getElementById('navCircuito');
-
       if (perfilLogado === 'Gestor') {
-        navCheckin.classList.remove('hidden'); navCheckin.classList.add('flex');
-        navCircuito.classList.remove('hidden'); navCircuito.classList.add('flex');
+        document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex');
+        document.getElementById('navCircuito').classList.remove('hidden'); document.getElementById('navCircuito').classList.add('flex');
+        document.getElementById('navUsuarios').classList.remove('hidden'); document.getElementById('navUsuarios').classList.add('flex');
       } else if (perfilLogado === 'Transporte') {
-        navCircuito.classList.remove('hidden'); navCircuito.classList.add('flex');
+        document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex');
+        document.getElementById('navCircuito').classList.remove('hidden'); document.getElementById('navCircuito').classList.add('flex');
       }
 
       var hoje = new Date().toISOString().split('T')[0];
@@ -425,6 +461,13 @@
       atualizarEtiqueta();
     }
 
+    function toggleDesktopSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    function toggleMobileSidebar() { 
+      const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.remove('opacity-0'), 10); } 
+      else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('opacity-0'); setTimeout(() => overlay.classList.add('hidden'), 300); }
+    }
+    
     function sairDoSistema() {
       localStorage.removeItem('flowYmsPerfil');
       localStorage.removeItem('flowYmsUser');
@@ -434,49 +477,9 @@
     // ==========================================
     // NAVEGAÇÃO INTERNA DO MÓDULO DE ETIQUETAS
     // ==========================================
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      if (sidebar.classList.contains('-translate-x-full')) {
-        sidebar.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-      } else {
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('opacity-0');
-        setTimeout(() => overlay.classList.add('hidden'), 300);
-      }
-    }
-
-    function navegarDentroDoModulo(telaId) {
-      // Usando as novas classes de Sidebar
-      document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-left text-slate-400 sidebar-hover";
-      document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-left text-slate-400 sidebar-hover";
-
-      document.getElementById('tela-etiqueta').classList.add('hidden');
-      document.getElementById('tela-cadastro').classList.add('hidden');
-      document.getElementById('tela-cadastro').classList.remove('flex');
-
-      if (telaId === 'tela-etiqueta') {
-        document.getElementById('titulo-pagina').innerText = "Gerador de Etiquetas";
-        document.getElementById('tela-etiqueta').classList.remove('hidden');
-        document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm text-left bg-blue-500 text-white shadow-md shadow-blue-500/20";
-      } else {
-        document.getElementById('titulo-pagina').innerText = "Catálogo de Materiais";
-        document.getElementById('tela-cadastro').classList.remove('hidden');
-        document.getElementById('tela-cadastro').classList.add('flex');
-        document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm text-left bg-blue-500 text-white shadow-md shadow-blue-500/20";
-        carregarTabelaSupabase(); 
-      }
-
-      if (window.innerWidth < 768) { toggleSidebar(); }
-    }
-
     function verificarAcessoCadastro() {
-      if (cadastroDesbloqueado) {
-        navegarDentroDoModulo('tela-cadastro');
-        return;
-      }
+      if (cadastroDesbloqueado) { navegarDentroDoModulo('tela-cadastro'); return; }
+
       Swal.fire({
         title: 'Acesso Restrito',
         html: swalEstiloInput + '<span style="font-size: 0.95rem; color: #64748b; font-weight: 500;">Digite a senha de liberação para acessar a base de dados.</span>',
@@ -497,16 +500,40 @@
       });
     }
 
+    function navegarDentroDoModulo(telaId) {
+      document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-left text-slate-400 sidebar-hover";
+      document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold text-sm text-left text-slate-400 sidebar-hover";
+
+      document.getElementById('tela-etiqueta').classList.add('hidden');
+      document.getElementById('tela-cadastro').classList.add('hidden');
+      document.getElementById('tela-cadastro').classList.remove('flex');
+
+      if (telaId === 'tela-etiqueta') {
+        document.getElementById('titulo-pagina').innerText = "Gerador de Etiquetas";
+        document.getElementById('tela-etiqueta').classList.remove('hidden');
+        document.getElementById('btnNavEtiqueta').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm text-left bg-blue-500 text-white shadow-md shadow-blue-500/20";
+      } else {
+        document.getElementById('titulo-pagina').innerText = "Catálogo de Materiais";
+        document.getElementById('tela-cadastro').classList.remove('hidden');
+        document.getElementById('tela-cadastro').classList.add('flex');
+        document.getElementById('btnNavCadastro').className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm text-left bg-blue-500 text-white shadow-md shadow-blue-500/20";
+        carregarTabelaSupabase(); 
+      }
+
+      if (window.innerWidth < 768) { toggleMobileSidebar(); }
+    }
+
     // ==========================================
-    // LÓGICA DO SUPABASE E CRUD (MANTIDA)
+    // LÓGICA DA TELA 2: CADASTRO
     // ==========================================
     async function carregarTabelaSupabase() {
       const corpo = document.getElementById('corpoTabela');
       corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-slate-400 font-bold"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-blue-500 block"></i> Sincronizando dados...</td></tr>`;
       
       const { data, error } = await client.from('produtos_tamco').select('id, cod_mat, descricao, medida').order('cod_mat', { ascending: true });
+
       if (error) { corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-rose-500 font-bold">Erro de comunicação com o banco de dados.</td></tr>`; return; }
-      
+
       listaGlobalProdutos = data;
       renderizarTabela(listaGlobalProdutos);
     }
@@ -514,6 +541,7 @@
     function renderizarTabela(dados) {
       const corpo = document.getElementById('corpoTabela');
       corpo.innerHTML = '';
+
       if (dados.length === 0) { corpo.innerHTML = `<tr><td colspan="4" class="text-center py-16 text-slate-400 font-bold">Base de dados vazia.</td></tr>`; return; }
 
       dados.forEach(prod => {
@@ -521,11 +549,17 @@
         tr.innerHTML = `
           <td class="font-bold text-slate-800 uppercase tracking-wide">${prod.cod_mat}</td>
           <td class="text-slate-600 font-semibold uppercase truncate max-w-[200px] sm:max-w-md">${prod.descricao}</td>
-          <td class="text-center"><span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold border border-indigo-100">${prod.medida}</span></td>
+          <td class="text-center">
+            <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold border border-indigo-100">${prod.medida}</span>
+          </td>
           <td class="text-right pr-4 md:pr-6">
             <div class="flex items-center justify-end gap-1 md:gap-2">
-              <button onclick="abrirModalEditar('${prod.id}')" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Editar"><i class="fa-solid fa-pen text-xs md:text-sm"></i></button>
-              <button onclick="confirmarExclusao('${prod.id}', '${prod.cod_mat}')" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Excluir"><i class="fa-solid fa-trash text-xs md:text-sm"></i></button>
+              <button onclick="abrirModalEditar('${prod.id}')" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Editar">
+                <i class="fa-solid fa-pen text-xs md:text-sm"></i>
+              </button>
+              <button onclick="confirmarExclusao('${prod.id}', '${prod.cod_mat}')" class="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-slate-100 text-slate-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center" title="Excluir">
+                <i class="fa-solid fa-trash text-xs md:text-sm"></i>
+              </button>
             </div>
           </td>
         `;
@@ -542,8 +576,10 @@
     function abrirModalNovo() {
       document.getElementById('cadAcao').value = 'novo';
       document.getElementById('modal-titulo').innerHTML = `<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-cube text-lg"></i></div> Novo Material`;
-      document.getElementById('cadCodigo').value = ""; document.getElementById('cadCodigo').disabled = false;
-      document.getElementById('cadDescricao').value = ""; document.getElementById('cadMedida').value = "KG";
+      document.getElementById('cadCodigo').value = "";
+      document.getElementById('cadCodigo').disabled = false;
+      document.getElementById('cadDescricao').value = "";
+      document.getElementById('cadMedida').value = "KG";
       document.getElementById('modal-cadastro').classList.remove('hidden');
       setTimeout(() => document.getElementById('cadCodigo').focus(), 100);
     }
@@ -553,25 +589,33 @@
       if (!prod) return;
       document.getElementById('cadAcao').value = id;
       document.getElementById('modal-titulo').innerHTML = `<div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-pen text-lg"></i></div> Editar Material`;
-      document.getElementById('cadCodigo').value = prod.cod_mat; document.getElementById('cadCodigo').disabled = true; 
-      document.getElementById('cadDescricao').value = prod.descricao; document.getElementById('cadMedida').value = prod.medida;
+      document.getElementById('cadCodigo').value = prod.cod_mat;
+      document.getElementById('cadCodigo').disabled = true; 
+      document.getElementById('cadDescricao').value = prod.descricao;
+      document.getElementById('cadMedida').value = prod.medida;
       document.getElementById('modal-cadastro').classList.remove('hidden');
       setTimeout(() => document.getElementById('cadDescricao').focus(), 100);
     }
 
-    function fecharModalCadastro() { document.getElementById('modal-cadastro').classList.add('hidden'); }
+    function fecharModalCadastro() {
+      document.getElementById('modal-cadastro').classList.add('hidden');
+    }
 
     function confirmarSalvamento() {
       const cod = document.getElementById('cadCodigo').value.trim();
       const desc = document.getElementById('cadDescricao').value.trim();
+      
       if (!cod || !desc) {
-        Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha os campos obrigatórios.', buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' }});
+        Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Preencha os campos obrigatórios.', buttonsStyling: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', confirmButton: 'swal-btn-confirm' } });
         return;
       }
+
       Swal.fire({
         title: 'Confirmar Ação', text: "Deseja salvar as informações deste material no sistema?", icon: 'question', showCancelButton: true, confirmButtonText: 'Sim, salvar', cancelButtonText: 'Cancelar', buttonsStyling: false,
         customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title', htmlContainer: 'swal-custom-html', confirmButton: 'swal-btn-confirm', cancelButton: 'swal-btn-cancel' }
-      }).then((result) => { if (result.isConfirmed) { executarSalvamentoBanco(); } });
+      }).then((result) => {
+        if (result.isConfirmed) { executarSalvamentoBanco(); }
+      });
     }
 
     function confirmarExclusao(id, codMat) {
@@ -605,11 +649,12 @@
       }
 
       Swal.fire({ icon: 'success', title: 'Cadastro salvo!', timer: 1500, showConfirmButton: false, customClass: { popup: 'swal-custom-popup', title: 'swal-custom-title' }});
-      fecharModalCadastro(); carregarTabelaSupabase(); 
+      fecharModalCadastro();
+      carregarTabelaSupabase(); 
     }
 
     // ==========================================
-    // LÓGICA DE GERAÇÃO DA ETIQUETA (MANTIDA)
+    // LÓGICA DA TELA 1: ETIQUETAS
     // ==========================================
     function renderizarQR(elementId, textElementId, boxId, textPlaceholderId, valor) {
       const container = document.getElementById(elementId);
@@ -630,9 +675,15 @@
     async function executarBusca(termo) {
       const termoLimpo = termo.trim();
       const caixa = document.getElementById('listaSugestoes');
-      if (termoLimpo.length < 2) { caixa.style.display = 'none'; return; }
+
+      if (termoLimpo.length < 2) {
+        caixa.style.display = 'none';
+        return;
+      }
+
       const { data, error } = await client.from('produtos_tamco').select('cod_mat, descricao, medida').or(`cod_mat.ilike.%${termoLimpo}%,descricao.ilike.%${termoLimpo}%`).limit(10);
       if (error) return;
+
       montarListaBusca(data);
     }
 
@@ -641,7 +692,8 @@
       caixa.innerHTML = '';
       if (!resultados || resultados.length === 0) {
         caixa.innerHTML = '<div class="p-4 text-slate-400 font-bold text-sm text-center">Nenhum material encontrado</div>';
-        caixa.style.display = 'block'; return;
+        caixa.style.display = 'block';
+        return;
       }
       resultados.forEach(function(prod) {
         var div = document.createElement('div');
