@@ -106,11 +106,23 @@
       <button onclick="toggleDesktopSidebar()" class="hidden md:flex w-8 h-8 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"><i class="fa-solid fa-bars-staggered"></i></button>
       <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-2 rounded-lg"><i class="fa-solid fa-bars text-xl"></i></button>
       <button onclick="carregarVeiculos()" class="w-8 h-8 border border-slate-200 rounded text-slate-500 hover:bg-slate-50 transition flex items-center justify-center" title="Atualizar"><i class="fa-solid fa-arrows-rotate text-sm"></i></button>
-      <div class="flex items-center max-w-xs w-full">
-        <input type="text" id="inpFiltro" placeholder="Filtro dinâmico..." onkeyup="filtrarLista()" class="input-moderno w-full rounded-r-none border-r-0">
-        <button class="bg-slate-50 border border-slate-200 text-slate-600 px-3 py-[0.40rem] rounded-r-lg font-semibold text-sm hover:bg-slate-100 transition">Pesquisar</button>
+      
+      <!-- Caixa de Busca -->
+      <div class="flex items-center max-w-sm w-full">
+        <input type="text" id="inpFiltro" placeholder="Buscar placa, produto ou transportadora..." onkeyup="verificarEnterBusca(event)" class="input-moderno w-full rounded-r-none border-r-0 placeholder-slate-400">
+        <button onclick="acionarBusca()" class="bg-blue-50 border border-blue-200 text-blue-600 px-4 py-[0.40rem] rounded-r-lg font-bold text-sm hover:bg-blue-100 transition shadow-sm">Pesquisar</button>
       </div>
     </header>
+
+    <!-- ABAS: Em Andamento / Finalizados -->
+    <div class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex gap-3 shrink-0">
+       <button id="tabPatio" onclick="mudarAba('patio')" class="px-5 py-2 bg-blue-50 text-blue-600 border border-blue-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-truck-ramp-box"></i> Em Andamento
+       </button>
+       <button id="tabHist" onclick="mudarAba('historico')" class="px-5 py-2 bg-white text-slate-500 border border-transparent hover:bg-slate-50 font-bold text-xs rounded-lg transition-all flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left"></i> Finalizados
+       </button>
+    </div>
 
     <div class="flex border-b border-slate-200 bg-slate-50 font-bold text-[11px] text-slate-500 px-4 md:px-6 py-2.5 shrink-0 uppercase tracking-wide">
       <div class="w-[45%] md:w-[35%] pl-2">Dados do veículo</div>
@@ -118,9 +130,9 @@
       <div class="w-[55%] md:w-[45%] pl-8 border-l border-slate-200 bg-white">Circuito</div>
     </div>
 
-    <!-- Lista 100% Limpa -->
+    <!-- Lista -->
     <main class="flex-1 overflow-y-auto custom-scrollbar relative bg-[#f4f7f9]">
-      <div id="listaVeiculos" class="flex flex-col"></div>
+      <div id="listaVeiculos" class="flex flex-col pb-6"></div>
     </main>
     
     <footer class="h-12 border-t border-slate-200 bg-white flex items-center justify-between px-4 md:px-6 shrink-0 text-xs text-slate-500">
@@ -203,7 +215,7 @@
      </div>
 
      <!-- Rodapé do Drawer com Ações -->
-     <div class="h-16 bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+     <div id="drawerRodapeRisco" class="h-16 bg-white border-t border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button id="btnVoltarEtapa" class="text-slate-500 hover:text-amber-500 text-xs font-bold px-3 py-2 rounded-lg hover:bg-slate-50 transition flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i> Desfazer Etapa</button>
         <button id="btnCancelarProc" class="text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-100 text-xs font-bold px-4 py-2 rounded-lg transition flex items-center gap-2"><i class="fa-solid fa-trash-can"></i> Excluir Processo</button>
      </div>
@@ -219,13 +231,14 @@
     const client = supabase.createClient(supabaseUrl, supabaseKey);
 
     let veiculosGlobais = [];
-    // ORDEM CORRETA: Check-in -> Pesagem Inicial -> Doca -> Pesagem Final -> Liberado
+    let abaAtiva = 'patio'; // Controle de estado da aba atual
     const ETAPAS_ORDEM = ['Check-in', 'Pesagem Inicial', 'Doca', 'Pesagem Final', 'Liberado'];
 
     window.onload = function() {
       document.getElementById('sidebarUser').innerText = usuarioLogado || 'Usuário';
       document.getElementById('sidebarPerfil').innerText = perfilLogado || 'Perfil';
-      if (perfilLogado !== 'Gestor') { 
+      
+      if (perfilLogado === 'Gestor') { 
           document.getElementById('navCheckin').classList.remove('hidden'); document.getElementById('navCheckin').classList.add('flex'); 
           document.getElementById('navUsuarios').classList.remove('hidden'); document.getElementById('navUsuarios').classList.add('flex'); 
       }
@@ -243,32 +256,116 @@
     }
     function sairDoSistema() { localStorage.clear(); window.location.href = 'index.html'; }
 
-    async function carregarVeiculos() {
-      const { data, error } = await client.from('tracking_yms_tamco').select('*').is('data_saida', null).order('data_checkin', { ascending: false });
-      if (error) { Swal.fire({icon: 'error', title: 'Erro', text: 'Falha ao buscar veículos.'}); return; }
-      veiculosGlobais = data; renderizarLista(veiculosGlobais);
+    // ==========================================
+    // LÓGICA DE ABAS E BUSCA
+    // ==========================================
+    function mudarAba(aba) {
+      abaAtiva = aba;
+      const tabPatio = document.getElementById('tabPatio');
+      const tabHist = document.getElementById('tabHist');
+      document.getElementById('inpFiltro').value = ''; // Limpa o input
+
+      if (aba === 'patio') {
+          tabPatio.className = "px-5 py-2 bg-blue-50 text-blue-600 border border-blue-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-2";
+          tabHist.className = "px-5 py-2 bg-white text-slate-500 border border-transparent hover:bg-slate-50 font-bold text-xs rounded-lg transition-all flex items-center gap-2";
+      } else {
+          tabHist.className = "px-5 py-2 bg-blue-50 text-blue-600 border border-blue-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-2";
+          tabPatio.className = "px-5 py-2 bg-white text-slate-500 border border-transparent hover:bg-slate-50 font-bold text-xs rounded-lg transition-all flex items-center gap-2";
+      }
+      carregarVeiculos();
     }
 
+    function verificarEnterBusca(e) {
+      if (e.key === 'Enter') acionarBusca();
+    }
+
+    function acionarBusca() {
+      const termo = document.getElementById('inpFiltro').value.trim().toLowerCase();
+      if (abaAtiva === 'patio') {
+          filtrarListaLocal(termo);
+      } else {
+          // No histórico, a busca vai no banco de dados para pegar de todos os tempos
+          carregarVeiculos(termo);
+      }
+    }
+
+    async function carregarVeiculos(termoDB = '') {
+      Swal.fire({ title: 'Carregando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+      let query = client.from('tracking_yms_tamco').select('*');
+
+      if (abaAtiva === 'patio') {
+          // Traz apenas os que não tem data de saída
+          query = query.is('data_saida', null).order('data_checkin', { ascending: false });
+      } else {
+          // Traz apenas os finalizados
+          query = query.not('data_saida', 'is', null).order('data_saida', { ascending: false });
+          
+          if (termoDB) {
+              // Se tiver pesquisando, busca em todo o histórico o termo digitado
+              query = query.or(`placa.ilike.%${termoDB}%,produto.ilike.%${termoDB}%,transportadora.ilike.%${termoDB}%`).limit(100);
+          } else {
+              // Por padrão (sem pesquisa), traz apenas o histórico do dia atual
+              const hojeInicio = new Date();
+              hojeInicio.setHours(0,0,0,0);
+              query = query.gte('data_saida', hojeInicio.toISOString());
+          }
+      }
+
+      const { data, error } = await query;
+      Swal.close();
+
+      if (error) { Swal.fire({icon: 'error', title: 'Erro', text: 'Falha ao buscar veículos.'}); return; }
+      
+      veiculosGlobais = data; 
+      
+      // Se for pátio ativo e o cara clicou em "Pesquisar" com algo escrito, filtra localmente
+      if (abaAtiva === 'patio' && termoDB) {
+         filtrarListaLocal(termoDB);
+      } else {
+         renderizarLista(veiculosGlobais);
+      }
+    }
+
+    function filtrarListaLocal(termo) {
+      renderizarLista(veiculosGlobais.filter(v => 
+          v.placa.toLowerCase().includes(termo) || 
+          v.transportadora.toLowerCase().includes(termo) || 
+          v.tipo_atividade.toLowerCase().includes(termo) || 
+          (v.produto && v.produto.toLowerCase().includes(termo))
+      ));
+    }
+
+    // ==========================================
+    // RENDERIZAÇÃO DA LISTA
+    // ==========================================
     function renderizarLista(dados) {
       const container = document.getElementById('listaVeiculos');
       document.getElementById('lblTotalRegistros').innerText = dados.length;
       container.innerHTML = '';
       
-      if (dados.length === 0) { container.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold text-sm">Nenhum veículo em pátio.</div>`; return; }
+      if (dados.length === 0) { 
+        let msg = abaAtiva === 'patio' ? 'Nenhum veículo no pátio neste momento.' : 'Nenhum veículo finalizado encontrado.';
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 font-bold text-sm mt-10"><i class="fa-solid fa-inbox text-3xl mb-3 block opacity-50"></i>${msg}</div>`; 
+        return; 
+      }
 
       dados.forEach(v => {
-        const infoSLA = verificarSLA(v.data_checkin, v.tipo_carga);
+        // Passa a data de saída para parar o relógio se já estiver finalizado
+        const infoSLA = verificarSLA(v.data_checkin, v.tipo_carga, v.data_saida);
         const dataFormatada = formatarDataEntrada(v.data_checkin);
         const htmlStepper = montarStepperHorizontal(v.etapa_atual, v.pula_pesagem);
         
-        const badgeClass = infoSLA.atrasado ? 'bg-rose-600 animate-pulse' : 'bg-[#7895a2]';
+        // Se já saiu, a badge fica Emerald em vez de cinza, e nunca pisca vermelho.
+        let badgeClass = 'bg-[#7895a2]';
+        if (v.data_saida) { badgeClass = 'bg-emerald-500 shadow-sm shadow-emerald-500/30'; } 
+        else if (infoSLA.atrasado) { badgeClass = 'bg-rose-600 animate-pulse shadow-sm shadow-rose-600/30'; }
+
         const tagTicket = v.ticket_pesagem ? `<span class="bg-blue-50 text-blue-600 border border-blue-100 text-[9px] px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-ticket"></i> ${v.ticket_pesagem}</span>` : '';
         const tagAgenda = v.sem_agenda ? `<span class="bg-amber-50 text-amber-600 border border-amber-100 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">S/ Agenda</span>` : '';
         const tagPaletes = v.qtd_paletes ? `<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-pallet"></i> ${v.qtd_paletes}</span>` : '';
         const tagGranel = v.peso_volume_granel ? `<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-weight-scale"></i> ${v.peso_volume_granel}</span>` : '';
 
-        // INTELIGÊNCIA EXCLUSIVA DA LISTA LIMPADA
-        // Os botões rápidos foram removidos da lista e movidos para o Drawer.
         const div = document.createElement('div');
         div.className = 'flex flex-col md:flex-row border-b border-slate-200 bg-white hover:bg-blue-50/40 hover:shadow-sm transition-all duration-200 cursor-pointer group';
         div.onclick = () => abrirDetalhes(v.id);
@@ -286,13 +383,13 @@
           </div>
           
           <div class="w-full md:w-[20%] border-t md:border-t-0 md:border-r border-slate-100 p-4 flex flex-col items-center justify-center relative hidden md:flex bg-slate-50/70">
-             <span class="${badgeClass} text-white px-4 py-1 rounded-full text-[10px] font-bold badge-tempo transition-colors duration-300 shadow-sm" data-checkin="${v.data_checkin}" data-carga="${v.tipo_carga}">${infoSLA.texto}</span>
+             <span class="${badgeClass} text-white px-4 py-1.5 rounded-full text-[10px] font-bold badge-tempo transition-colors duration-300" data-checkin="${v.data_checkin}" data-carga="${v.tipo_carga}" data-saida="${v.data_saida || ''}">${infoSLA.texto}</span>
              <p class="text-[9px] text-slate-400 mt-2 text-center leading-snug font-medium">Entrou<br>${dataFormatada}</p>
           </div>
           
           <div class="w-full md:w-[45%] p-4 md:pl-8 flex flex-col justify-center relative min-h-[110px] bg-white">
              <div class="flex items-center w-full max-w-sm mx-auto relative mb-2 mt-2">${htmlStepper}</div>
-             <p class="text-[10px] text-slate-400 font-medium text-center mt-6 group-hover:text-blue-500 transition-colors hidden md:block">Clique para gerenciar no painel lateral <i class="fa-solid fa-arrow-pointer ml-1"></i></p>
+             <p class="text-[10px] text-slate-400 font-medium text-center mt-6 group-hover:text-blue-500 transition-colors hidden md:block">Clique para ver os detalhes no painel lateral <i class="fa-solid fa-arrow-pointer ml-1"></i></p>
           </div>
         `;
         container.appendChild(div);
@@ -301,6 +398,10 @@
 
     function montarStepperHorizontal(etapaAtual, pulaPesagem) {
       let html = ''; const indiceAtual = ETAPAS_ORDEM.indexOf(etapaAtual);
+      // Se for etapa "Saida", o indiceAtual vai ser -1 (não acha no array). Tratamos isso forçando tudo concluído.
+      const isFinalizado = etapaAtual === 'Saida';
+      const maxIndice = isFinalizado ? 99 : indiceAtual;
+
       const labels = ['CHECK-IN', 'PESAG. 1', 'DOCA', 'PESAG. 2', 'LIBERADO'];
 
       for (let i = 0; i < ETAPAS_ORDEM.length; i++) {
@@ -309,23 +410,24 @@
         let isSkipped = pulaPesagem && (nomeEtapa === 'Pesagem Inicial' || nomeEtapa === 'Pesagem Final');
         
         if (isSkipped) nodeClass = 'node-skipped'; 
-        else if (i < indiceAtual) nodeClass = 'node-completed'; 
-        else if (i === indiceAtual) nodeClass = 'node-active';
+        else if (i < maxIndice) nodeClass = 'node-completed'; 
+        else if (i === maxIndice) nodeClass = 'node-active';
 
         let innerContent = '';
         if (nodeClass === 'node-completed') innerContent = '<i class="fa-solid fa-check text-[7px]"></i>';
         else if (nodeClass === 'node-active') innerContent = '<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>';
         else if (nodeClass === 'node-skipped') innerContent = '<i class="fa-solid fa-minus text-[7px]"></i>';
 
-        let tooltip = i === indiceAtual ? `<div class="tooltip-vaga">${labels[i]}</div>` : '';
-        let iconeCaminhao = i === indiceAtual ? `<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-500 text-xs animate-pulse"><i class="fa-solid fa-truck-front"></i></div>` : '';
+        let tooltip = (i === maxIndice && !isFinalizado) ? `<div class="tooltip-vaga">${labels[i]}</div>` : '';
+        let iconeCaminhao = (i === maxIndice && !isFinalizado) ? `<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-blue-500 text-xs animate-pulse"><i class="fa-solid fa-truck-front"></i></div>` : '';
 
-        html += `<div class="relative flex flex-col items-center flex-1"><div class="stepper-node ${nodeClass}">${innerContent}${tooltip}</div><p class="text-[8px] ${isSkipped ? 'text-slate-300 line-through' : (i <= indiceAtual ? 'text-blue-600 font-bold' : 'text-slate-400')} absolute top-4 whitespace-nowrap uppercase tracking-wider">${labels[i]}</p>${iconeCaminhao}</div>`;
+        // Se finalizado, deixa o texto normal e arranca o caminhão
+        html += `<div class="relative flex flex-col items-center flex-1"><div class="stepper-node ${nodeClass}">${innerContent}${tooltip}</div><p class="text-[8px] ${isSkipped ? 'text-slate-300 line-through' : (i <= maxIndice ? 'text-blue-600 font-bold' : 'text-slate-400')} absolute top-4 whitespace-nowrap uppercase tracking-wider">${labels[i]}</p>${iconeCaminhao}</div>`;
 
         if (i < ETAPAS_ORDEM.length - 1) {
-           let lineClass = (i < indiceAtual && !isSkipped) ? 'line-completed' : '';
-           if(pulaPesagem && i === 0 && indiceAtual >= 2) lineClass = 'line-completed';
-           if(pulaPesagem && i === 2 && indiceAtual >= 4) lineClass = 'line-completed';
+           let lineClass = (i < maxIndice && !isSkipped) ? 'line-completed' : '';
+           if(pulaPesagem && i === 0 && maxIndice >= 2) lineClass = 'line-completed';
+           if(pulaPesagem && i === 2 && maxIndice >= 4) lineClass = 'line-completed';
            html += `<div class="stepper-line ${lineClass}"></div>`;
         }
       }
@@ -346,46 +448,53 @@
       document.getElementById('drawerPlaca').innerText = v.placa;
       document.getElementById('drawerProduto').innerText = v.produto || 'DIVERSOS';
       document.getElementById('drawerData').innerText = formatarDataEntrada(v.data_checkin);
-      document.getElementById('drawerArea').innerText = v.etapa_atual;
-      document.getElementById('drawerEtapaAtual').innerText = `Em operação: ${v.etapa_atual}`;
+      
+      let txtEtapa = v.data_saida ? 'Processo Finalizado (Saída)' : `Em operação: ${v.etapa_atual}`;
+      document.getElementById('drawerEtapaAtual').innerText = txtEtapa;
+      document.getElementById('drawerArea').innerText = v.data_saida ? 'Fora do Pátio' : v.etapa_atual;
 
+      // Botões de Ação do Topo
       let acoesTop = '';
-      if (v.etapa_atual === 'Check-in') {
-        acoesTop = `
-          <button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Doca', true, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 text-[10px] font-bold px-3 py-1.5 rounded-lg transition shadow-sm whitespace-nowrap">Pular p/ Doca</button>
-          <button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Pesagem Inicial', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar: Balança 1</button>
-        `;
-      } else if (v.etapa_atual === 'Pesagem Inicial') {
-        acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Doca', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar p/ Doca</button>`;
-      } else if (v.etapa_atual === 'Doca') {
-         if (v.pula_pesagem) {
-            acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Liberado', true, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Finalizar Doca</button>`;
-         } else {
-            acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Pesagem Final', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar: Balança 2</button>`;
+      if (v.data_saida) {
+         // Oculta tudo se estiver finalizado
+         acoesTop = `<span class="bg-emerald-50 text-emerald-600 font-bold px-3 py-1.5 rounded-lg border border-emerald-200 text-[10px] uppercase tracking-wide"><i class="fa-solid fa-check-circle mr-1"></i> Circuito Finalizado</span>`;
+         document.getElementById('drawerRodapeRisco').style.display = 'none'; // Esconde barra de baixo (Voltar/Excluir)
+      } else {
+         document.getElementById('drawerRodapeRisco').style.display = 'flex';
+         document.getElementById('btnVoltarEtapa').style.display = v.etapa_atual === 'Check-in' ? 'none' : 'flex';
+         document.getElementById('btnVoltarEtapa').onclick = () => voltarEtapa(v.id, v.placa, v.etapa_atual);
+         document.getElementById('btnCancelarProc').onclick = () => cancelarProcesso(v.id, v.placa);
+
+         if (v.etapa_atual === 'Check-in') {
+            acoesTop = `
+              <button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Doca', true, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 text-[10px] font-bold px-3 py-1.5 rounded-lg transition shadow-sm whitespace-nowrap">Pular p/ Doca</button>
+              <button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Pesagem Inicial', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar: Balança 1</button>
+            `;
+         } else if (v.etapa_atual === 'Pesagem Inicial') {
+            acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Doca', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar p/ Doca</button>`;
+         } else if (v.etapa_atual === 'Doca') {
+            acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Liberado', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Finalizar Doca</button>`;
+         } else if (v.etapa_atual === 'Liberado') {
+            if (v.pula_pesagem) {
+               acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Saida', true, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-emerald-500 whitespace-nowrap">Registrar Saída</button>`;
+            } else {
+               acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Pesagem Final', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-slate-800 text-white hover:bg-slate-900 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-slate-800 whitespace-nowrap">Avançar: Balança 2</button>`;
+            }
+         } else if (v.etapa_atual === 'Pesagem Final') {
+            acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Saida', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-emerald-500 whitespace-nowrap">Registrar Saída</button>`;
          }
-      } else if (v.etapa_atual === 'Pesagem Final') {
-        acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Liberado', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-amber-500 text-white hover:bg-amber-600 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-amber-500 whitespace-nowrap">Liberar (Aguardar NF)</button>`;
-      } else if (v.etapa_atual === 'Liberado') {
-        acoesTop = `<button onclick="confirmarAvanco('${v.id}', '${v.placa}', '${v.etapa_atual}', 'Saida', false, '${v.tipo_carga}', '${v.data_checkin}')" class="bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-bold px-4 py-1.5 rounded-lg transition shadow-sm border border-emerald-500 whitespace-nowrap">Registrar Saída</button>`;
       }
       document.getElementById('drawerAcoesTopo').innerHTML = acoesTop;
 
-      document.getElementById('btnVoltarEtapa').onclick = () => voltarEtapa(v.id, v.placa, v.etapa_atual);
-      document.getElementById('btnCancelarProc').onclick = () => cancelarProcesso(v.id, v.placa);
-      document.getElementById('btnVoltarEtapa').style.visibility = v.etapa_atual === 'Check-in' ? 'hidden' : 'visible';
-
-      const timestamps = { 
-        'Check-in': v.data_checkin, 
-        'Pesagem Inicial': v.data_pesagem_inicio, 
-        'Doca': v.data_doca_inicio, 
-        'Pesagem Final': v.data_doca_fim, 
-        'Liberado': v.pula_pesagem ? v.data_doca_fim : v.data_pesagem_fim 
-      };
-      
+      const timestamps = { 'Check-in': v.data_checkin, 'Pesagem Inicial': v.data_pesagem_inicio, 'Doca': v.data_doca_inicio, 'Pesagem Final': v.data_pesagem_fim, 'Liberado': v.pula_pesagem ? v.data_doca_fim : v.data_pesagem_fim, 'Saida': v.data_saida };
       let htmlHistorico = '';
-      const idxAtual = ETAPAS_ORDEM.indexOf(v.etapa_atual);
+      const isFinalizado = v.data_saida !== null;
+      const idxAtual = isFinalizado ? 99 : ETAPAS_ORDEM.indexOf(v.etapa_atual);
 
-      ETAPAS_ORDEM.forEach((etapa, i) => {
+      // Adicionando a "Saída" na listagem visual do histórico
+      const etapasMostrar = [...ETAPAS_ORDEM, 'Saida'];
+
+      etapasMostrar.forEach((etapa, i) => {
          const isSkipped = v.pula_pesagem && (etapa === 'Pesagem Inicial' || etapa === 'Pesagem Final');
          const tstamp = timestamps[etapa];
          let statusText = ''; let dotColor = ''; let textColor = '';
@@ -393,7 +502,7 @@
          if (isSkipped) {
             statusText = '<span class="text-slate-400">Pulo Registrado</span>';
             dotColor = 'border-slate-300 bg-slate-100'; textColor = 'text-slate-400 line-through';
-         } else if (i < idxAtual) {
+         } else if (tstamp) {
             statusText = `<span class="text-slate-500">Concluído: ${formatarDataEntrada(tstamp)}</span>`;
             dotColor = 'border-blue-500 bg-blue-500'; textColor = 'text-slate-800';
          } else if (i === idxAtual) {
@@ -404,12 +513,16 @@
             dotColor = 'border-slate-200 bg-white'; textColor = 'text-slate-400';
          }
 
-         const hasLine = i < ETAPAS_ORDEM.length - 1;
+         const hasLine = i < etapasMostrar.length - 1;
          let lineColor = 'bg-slate-200';
-         if ((i < idxAtual && !isSkipped) || (v.pula_pesagem && ((i===0 && idxAtual>=2) || (i===2 && idxAtual>=4)))) { lineColor = 'bg-blue-500'; }
+         // Se a etapa ATUAL já tem data, ou se a etapa "seguinte" do pulo tem data, pinta a linha.
+         if (tstamp) { lineColor = 'bg-blue-500'; }
+         if (v.pula_pesagem && etapa === 'Check-in' && timestamps['Doca']) lineColor = 'bg-blue-500';
+         if (v.pula_pesagem && etapa === 'Doca' && timestamps['Liberado']) lineColor = 'bg-blue-500';
 
          let displayName = etapa;
          if(etapa === 'Liberado') displayName = 'Liberado (Aguardando NF)';
+         if(etapa === 'Saida') displayName = 'Saída do Pátio';
 
          htmlHistorico += `
          <div class="flex gap-4 relative">
@@ -427,7 +540,7 @@
     }
 
     // ==========================================
-    // MODAL INTELIGENTE
+    // MODAL INTELIGENTE E AVANÇO DE BANCO
     // ==========================================
     function confirmarAvanco(id, placa, etapaAtual, proximaEtapa, setPulaPesagemFlag, tipoCarga, dataCheckin) {
       
@@ -436,7 +549,7 @@
       
       let pedMotivoAtraso = false;
       if (proximaEtapa === 'Saida' && tipoCarga === 'Carga Seca') {
-        const infoSla = verificarSLA(dataCheckin, tipoCarga);
+        const infoSla = verificarSLA(dataCheckin, tipoCarga, null);
         pedMotivoAtraso = infoSla.atrasado;
       }
 
@@ -559,8 +672,8 @@
       if (etapaAtual === 'Check-in' && proximaEtapa === 'Doca') payload.data_doca_inicio = agora; // Pulo!
       if (etapaAtual === 'Pesagem Inicial' && proximaEtapa === 'Doca') payload.data_doca_inicio = agora;
       if (etapaAtual === 'Doca' && proximaEtapa === 'Pesagem Final') payload.data_doca_fim = agora;
-      if (etapaAtual === 'Doca' && proximaEtapa === 'Liberado') payload.data_doca_fim = agora; // Pulo!
-      if (etapaAtual === 'Pesagem Final' && proximaEtapa === 'Liberado') payload.data_pesagem_fim = agora;
+      if (etapaAtual === 'Doca' && proximaEtapa === 'Liberado') payload.data_doca_fim = agora; // Pulo ou fluxo normal
+      if (etapaAtual === 'Pesagem Final' && proximaEtapa === 'Liberado') {} // A doca_fim já foi gravada.
       if (proximaEtapa === 'Saida') payload.data_saida = agora;
 
       const { error } = await client.from('tracking_yms_tamco').update(payload).eq('id', id);
@@ -599,13 +712,20 @@
       });
     }
 
-    function verificarSLA(dataCheckin, tipoCarga) {
+    // ==========================================
+    // CÁLCULO DE TEMPO E SLA
+    // ==========================================
+    function verificarSLA(dataCheckin, tipoCarga, dataSaida) {
       if(!dataCheckin) return { texto: "00:00", atrasado: false };
-      const diffMs = new Date() - new Date(dataCheckin);
+      
+      // Se tiver data de saída (histórico), o cronômetro para e calcula o tempo total final.
+      const fim = dataSaida ? new Date(dataSaida) : new Date();
+      const diffMs = fim - new Date(dataCheckin);
       const horasRestantes = diffMs / 3600000;
       
       let atrasado = false;
-      if (tipoCarga === 'Carga Seca' && horasRestantes >= 3) { atrasado = true; }
+      // O visual só fica "atrasado" piscando vermelho se AINDA estiver no pátio (!dataSaida)
+      if (!dataSaida && tipoCarga === 'Carga Seca' && horasRestantes >= 3) { atrasado = true; }
       
       const formatado = `${String(Math.floor(horasRestantes)).padStart(2, '0')}:${String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0')}`;
       return { texto: formatado, atrasado: atrasado };
@@ -617,8 +737,11 @@
     }
 
     function atualizarTemposVisuais() {
+      // Atualiza apenas se estiver na aba do pátio
+      if(abaAtiva === 'historico') return;
+
       document.querySelectorAll('.badge-tempo').forEach(b => {
-        const info = verificarSLA(b.getAttribute('data-checkin'), b.getAttribute('data-carga'));
+        const info = verificarSLA(b.getAttribute('data-checkin'), b.getAttribute('data-carga'), b.getAttribute('data-saida'));
         b.innerText = info.texto;
         if(info.atrasado) { 
            b.classList.remove('bg-[#7895a2]'); b.classList.add('bg-rose-600', 'animate-pulse'); 
@@ -626,11 +749,6 @@
            b.classList.remove('bg-rose-600', 'animate-pulse'); b.classList.add('bg-[#7895a2]');
         }
       });
-    }
-
-    function filtrarLista() {
-      const termo = document.getElementById('inpFiltro').value.toLowerCase();
-      renderizarLista(veiculosGlobais.filter(v => v.placa.toLowerCase().includes(termo) || v.transportadora.toLowerCase().includes(termo) || v.tipo_atividade.toLowerCase().includes(termo) || (v.produto && v.produto.toLowerCase().includes(termo))));
     }
   </script>
 </body>
